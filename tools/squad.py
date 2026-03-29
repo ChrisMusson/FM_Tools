@@ -1,37 +1,31 @@
-"""Print squad CA and PA data for one or more team buckets."""
-
-import argparse
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from core.squad_data import load_squad_table
 
-DEFAULT_TEAM_IDS = [0, 1]
+squad_types = {
+    0: "First Team",
+    1: "Reserves",
+    2: "A",
+    3: "B",
+    4: "Superdraft A",
+    5: "Superdraft B",
+    6: "Superdraft C",
+    7: "Superdraft D",
+    8: "Waivers",
+    9: "U23",
+    10: "U21",
+    11: "U19",
+    12: "U18",
+    13: "C",
+    14: "Amateur",
+    15: "II",
+    16: "Team 2",
+    17: "Team 3",
+    18: "U20",
+    22: "Youth Evaluation",
+    30: "Dutch Reserves",
+    44: "Second Team",
+}
 
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--target-team",
-        dest="target_teams",
-        action="append",
-        type=int,
-        help="Team bucket id to include. Repeat the flag to include more than one.",
-    )
-    parser.add_argument("--limit", type=int, default=20, help="How many rows to print")
-    return parser.parse_args()
-
-
-def main():
-    args = parse_args()
-    target_teams = args.target_teams or DEFAULT_TEAM_IDS
-    squad = load_squad_table(target_teams=target_teams)
-    print(squad.head(args.limit).to_string(index=False))
-
-
-if __name__ == "__main__":
-    main()
+"""Example: Print the Name, CA, and PA of players in the first team and reserves of your manager's club"""
+squad_ids = [0, 1]  # First team and reserves
+players = load_squad_table(target_teams=squad_ids).reset_index(drop=True).head(10)
+print(players.head(10))

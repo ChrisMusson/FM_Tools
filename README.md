@@ -28,7 +28,12 @@ On intake day, the script `intake_day.py`:
 
 ## Scripts
 
-Before you can do this though, you need to calibrate the script to work on your screen size / zoom / skin. To do this, you need to run `tools/calibration.py` and follow all the instructions on there. This is best done on a youth intake preview day, so that you can accurately measure where the star rating region is. However, you can just skip through that if you are not near the youth intake preview day.
+Before you can do this though, you need to calibrate the script to work on your screen size / zoom / skin. To do this, run `uv run -m tools.calibration` and follow the instructions. This is best done on a youth intake preview day, so that you can accurately measure where the star rating region is. However, you can just skip through that if you are not near the youth intake preview day.
+
+The helper scripts in `tools/` are intended to be run as modules:
+
+- `uv run -m tools.calibration`
+- `uv run -m tools.squad`
 
 ## Platform Support
 
@@ -37,16 +42,16 @@ The repo is intended to work on both Windows and Linux.
 - Screen reading and input automation use different backends depending on the OS.
 - Squad data reading uses OS-specific process-memory access behind one shared interface.
 
-The scripts are meant to be run from the project root, or from `tools/` for the helper scripts. You should not need to run anything inside `core/` directly.
+The scripts are meant to be run from the project root. You should not need to run anything inside `core/` or `tools/` directly.
 
 ## Typical Workflow
 
-1. Run `tools/calibration.py` once to set up your screen positions
+1. Run `uv run -m tools.calibration` once to set up your screen positions
 2. Open Football Manager and get to the relevant screen
 3. Open `preview_day.py` or `intake_day.py`
 4. Edit the stop condition for your chosen script
-5. Run the script 
-6. Let the script keep reloading until it finds a result worth keeping
+5. Run the script - `uv run preview_day.py`
+6. Let the script keep reloading until it finds a result that meets your threshold
 
 ## Notes
 

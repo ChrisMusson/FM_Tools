@@ -1,14 +1,8 @@
 import math
-import sys
 import time
 import tkinter as tk
 from dataclasses import dataclass
-from pathlib import Path
 from tkinter import messagebox, simpledialog
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from core.platform_support import PROJECT_ROOT
 from core.screen_probe import count_matching_pixels, sample_pixel
