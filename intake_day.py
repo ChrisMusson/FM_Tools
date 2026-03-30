@@ -1,50 +1,81 @@
-"""Reload intake day until the generated players hit the chosen CA and PA targets."""
-
+import os
 from time import sleep
+
+import pandas as pd
 
 from core.squad_data import load_squad_table, open_fm_process
 from core.ui_automation import create_input_controller, reload_last_save, wait_for_continue_button
 
-ACTION_PAUSE_SECONDS = 2
-TARGET_TEAM_IDS = [22]
-MINIMUM_TARGET_PA = 140
-MINIMUM_TARGET_CA = 114
+START_DELAY_SECONDS = 3  # how long you have from running the script to make the FM24 window active
+ACTION_PAUSE_SECONDS = 1  # how long to wait between actions (mouse clicks, key presses, etc.)
+
+CA_TARGET = 100
+PA_TARGET = 170
+
+
+def should_stop_preview_loop(players_df):
+    # stop if there is a player whose (CA >= CA_TARGET) and (PA >= PA_TARGET)
+    return not players_df.loc[(players_df["CA"] >= CA_TARGET) & (players_df["PA"] >= PA_TARGET)].empty
+
+
+def clear_terminal():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+"""Reload the preview day until the intake is good enough to keep."""
 
 
 def main():
     controller = create_input_controller(action_pause=ACTION_PAUSE_SECONDS)
     process = open_fm_process()
+    best_players_by_trial = []
     reload_last_save(controller)
     trial = 0
 
     while True:
-        trial += 1
-        controller.press("space")
-        controller.press("escape")
-        wait_for_continue_button()
+        try:
+            trial += 1
+            sleep(1)
+            controller.press("space")
+            controller.press("escape")
+            wait_for_continue_button()
 
-        sleep(1)
-        squad = load_squad_table(target_teams=TARGET_TEAM_IDS, process=process)
-        squad = squad.sort_values(by=["PA", "CA"], ascending=[False, False])
+            players_df = load_squad_table(process=process)
+            best_player = players_df.sort_values(by=["PA", "CA"], ascending=[False, False]).iloc[0]
+            best_players_by_trial.append(
+                {
+                    "Trial": trial,
+                    "Name": best_player["Name"],
+                    "CA": best_player["CA"],
+                    "PA": best_player["PA"],
+                }
+            )
 
-        max_pa = squad["PA"].max()
-        max_ca = squad["CA"].max()
+            leaderboard = (
+                pd.DataFrame(best_players_by_trial)
+                .assign(Total=lambda df: df["CA"] + df["PA"])
+                .sort_values(by=["Total", "PA", "CA", "Trial"], ascending=[False, False, False, True])
+                .head(10)
+                .drop(columns=["Total"])
+                .reset_index(drop=True)
+            )
+            latest_trial = best_players_by_trial[-1]
+            clear_terminal()
+            print(leaderboard)
+            print()
+            print(f"Latest trial: {latest_trial['Trial']} | {latest_trial['Name']} | CA {latest_trial['CA']} | PA {latest_trial['PA']}")
+            print()
 
-        print(f"\nTrial {trial}")
-        print(squad.head(3))
+            if should_stop_preview_loop(players_df):
+                return
 
-        if max_pa < MINIMUM_TARGET_PA or max_ca < MINIMUM_TARGET_CA:
             reload_last_save(controller)
-            continue
 
-        top_targets = squad.loc[(squad["PA"] >= MINIMUM_TARGET_PA) & (squad["CA"] >= MINIMUM_TARGET_CA)]
-        nearby_high_potential = squad.loc[squad["PA"] >= MINIMUM_TARGET_PA - 20]
-        if len(top_targets) >= 1 and len(nearby_high_potential) >= 1:
-            print(squad)
-            return
-
-        reload_last_save(controller)
+        except Exception as exc:
+            print(exc)
+            reload_last_save(controller)
 
 
 if __name__ == "__main__":
+    sleep(START_DELAY_SECONDS)
     main()
