@@ -84,15 +84,18 @@ def sample_pixel(point):
     return capture_region((x, y, 1, 1)).getpixel((0, 0))
 
 
-def count_matching_pixels(region, colour, tolerance: int = 40):
-    pixels = np.asarray(capture_region(region), dtype=np.uint8)
-
+def _count_matching_pixels_in_array(pixels, colour, tolerance: int = 40):
     red = pixels[..., 0].astype(np.int16)
     green = pixels[..., 1].astype(np.int16)
     blue = pixels[..., 2].astype(np.int16)
     target_red, target_green, target_blue = colour
     mask = (np.abs(red - target_red) <= tolerance) & (np.abs(green - target_green) <= tolerance) & (np.abs(blue - target_blue) <= tolerance)
     return int(mask.sum())
+
+
+def count_matching_pixels(region, colour, tolerance: int = 40):
+    pixels = np.asarray(capture_region(region), dtype=np.uint8)
+    return _count_matching_pixels_in_array(pixels, colour, tolerance=tolerance)
 
 
 def guess_star_rating(yellow_pixels, half_increment: int = STARS.half_increment, full_increment: int = STARS.full_increment):
@@ -120,5 +123,6 @@ def read_star_rating():
 
 
 def read_letter_ratings(pixels_per_rating: int = RATINGS.pixels_per_rating):
-    counts = {grade: count_matching_pixels(RATINGS.region, colour, tolerance=0) for grade, colour in RATINGS.colours.items()}
+    pixels = np.asarray(capture_region(RATINGS.region), dtype=np.uint8)
+    counts = {grade: _count_matching_pixels_in_array(pixels, colour, tolerance=0) for grade, colour in RATINGS.colours.items()}
     return "".join(grade * max(0, int(round(counts[grade] / pixels_per_rating))) for grade in sorted(counts))
