@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from core.platform_support import IS_LINUX, IS_WINDOWS
+from core.platform_support import IS_WINDOWS
 from core.screen_config import RATINGS, STARS
 from PIL import Image
 
@@ -51,32 +51,29 @@ def capture_region(region):
 
         return pyautogui.screenshot(region=region).convert("RGB")
 
-    if IS_LINUX:
-        fd, raw_path = tempfile.mkstemp(prefix="fm_screenshot_", suffix=".png")
-        os.close(fd)
-        screenshot_path = Path(raw_path)
-        errors = []
+    fd, raw_path = tempfile.mkstemp(prefix="fm_screenshot_", suffix=".png")
+    os.close(fd)
+    screenshot_path = Path(raw_path)
+    errors = []
 
-        try:
-            for command in _linux_capture_commands(str(screenshot_path)):
-                screenshot_path.unlink(missing_ok=True)
-                completed = subprocess.run(command, capture_output=True, text=True, timeout=10, check=False)
-
-                if completed.returncode == 0 and _wait_for_capture_file(screenshot_path):
-                    with Image.open(screenshot_path) as image:
-                        image = image.convert("RGB")
-                        if left < 0 or top < 0 or left + width > image.width or top + height > image.height:
-                            raise RuntimeError(f"Requested region {region!r} is outside captured screen bounds {image.size!r}")
-                        return image.crop((left, top, left + width, top + height))
-
-                details = (completed.stderr.strip() or completed.stdout.strip() or "no output").replace("\n", " ")
-                errors.append(f"{command[0]} failed: {details}")
-
-            raise RuntimeError("; ".join(errors))
-        finally:
+    try:
+        for command in _linux_capture_commands(str(screenshot_path)):
             screenshot_path.unlink(missing_ok=True)
+            completed = subprocess.run(command, capture_output=True, text=True, timeout=10, check=False)
 
-    raise RuntimeError("Unsupported platform")
+            if completed.returncode == 0 and _wait_for_capture_file(screenshot_path):
+                with Image.open(screenshot_path) as image:
+                    image = image.convert("RGB")
+                    if left < 0 or top < 0 or left + width > image.width or top + height > image.height:
+                        raise RuntimeError(f"Requested region {region!r} is outside captured screen bounds {image.size!r}")
+                    return image.crop((left, top, left + width, top + height))
+
+            details = (completed.stderr.strip() or completed.stdout.strip() or "no output").replace("\n", " ")
+            errors.append(f"{command[0]} failed: {details}")
+
+        raise RuntimeError("; ".join(errors))
+    finally:
+        screenshot_path.unlink(missing_ok=True)
 
 
 def sample_pixel(point):
@@ -113,13 +110,9 @@ def guess_star_rating(yellow_pixels, half_increment: int = STARS.half_increment,
 
 
 def read_star_rating():
-    try:
-        yellow_pixels = count_matching_pixels(STARS.region, STARS.colour)
-        stars, _expected, _difference = guess_star_rating(yellow_pixels)
-        return stars, yellow_pixels
-    except Exception as exc:
-        print(exc)
-        return 0, 0
+    yellow_pixels = count_matching_pixels(STARS.region, STARS.colour)
+    stars, _expected, _difference = guess_star_rating(yellow_pixels)
+    return stars, yellow_pixels
 
 
 def read_letter_ratings(pixels_per_rating: int = RATINGS.pixels_per_rating):

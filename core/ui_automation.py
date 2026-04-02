@@ -2,7 +2,7 @@
 
 from time import monotonic, sleep
 
-from core.platform_support import IS_LINUX, IS_WINDOWS
+from core.platform_support import IS_WINDOWS
 from core.screen_config import CONTINUE_BUTTON, RELOAD_DIALOG_NO_BUTTON
 from core.screen_probe import sample_pixel
 
@@ -36,7 +36,7 @@ class InputController:
 
             self.platform = "windows"
             self.pyautogui = pyautogui
-        elif IS_LINUX:
+        else:
             from Xlib import XK, X, display
             from Xlib.ext import xtest
 
@@ -46,8 +46,6 @@ class InputController:
             self.xtest = xtest
             self.display = display.Display()
             self.root = self.display.screen().root
-        else:
-            raise RuntimeError("Unsupported platform")
 
     def press(self, key_name: str):
         if self.platform == "windows":
@@ -91,10 +89,6 @@ class InputController:
         return keycode
 
 
-def create_input_controller(action_pause: float = 1):
-    return InputController(action_pause=action_pause)
-
-
 def _pixel_matches(pixel, target_colour, tolerance: int = 0):
     return all(abs(int(pixel[index]) - int(target_colour[index])) <= tolerance for index in range(3))
 
@@ -117,6 +111,13 @@ def wait_for_continue_button(
         f"{CONTINUE_BUTTON.xy} to match {CONTINUE_BUTTON.colour} within tolerance {CONTINUE_BUTTON.tolerance}; "
         f"last seen {last_seen}"
     )
+
+
+def advance_one_day(controller: InputController, settle_seconds: float = 1):
+    sleep(settle_seconds)
+    controller.press("space")
+    controller.press("escape")
+    wait_for_continue_button()
 
 
 def reload_last_save(controller: InputController):

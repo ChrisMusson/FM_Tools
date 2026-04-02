@@ -1,6 +1,8 @@
+"""Example script for printing Name, CA, and PA from selected squad buckets."""
+
 from core.squad_data import load_squad_table
 
-squad_types = {
+SQUAD_TYPES = {
     0: "First Team",
     1: "Reserves",
     2: "A",
@@ -25,7 +27,11 @@ squad_types = {
     44: "Second Team",
 }
 
-"""Example: Print the Name, CA, and PA of players in the first team and reserves of your manager's club"""
-squad_ids = [0, 1]  # First team and reserves
-players = load_squad_table(target_teams=squad_ids).reset_index(drop=True).head(10)
-print(players.head(10))
+def main():
+    squad_ids = [0, 9, 22]
+    players = load_squad_table(target_teams=squad_ids).reset_index(drop=True)
+    print(players.head(10))
+
+
+if __name__ == "__main__":
+    main()

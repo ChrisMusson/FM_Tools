@@ -2,12 +2,12 @@ import math
 import time
 import tkinter as tk
 from dataclasses import dataclass
+from pathlib import Path
 from tkinter import messagebox, simpledialog
 
-from core.platform_support import PROJECT_ROOT
 from core.screen_probe import count_matching_pixels, sample_pixel
 
-CONFIG_PATH = PROJECT_ROOT / "core" / "screen_config.py"
+CONFIG_PATH = Path(__file__).resolve().parents[1] / "core" / "screen_config.py"
 
 STAR_COLOUR = (244, 188, 0)
 RATING_COLOURS = {

@@ -1,10 +1,6 @@
 """Platform helpers shared by the scripts in this repo."""
 
 import sys
-from pathlib import Path
-
-PACKAGE_ROOT = Path(__file__).resolve().parent
-PROJECT_ROOT = PACKAGE_ROOT.parent
 IS_WINDOWS = sys.platform.startswith("win")
 IS_LINUX = sys.platform.startswith("linux")
 

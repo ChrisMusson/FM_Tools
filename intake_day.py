@@ -4,16 +4,16 @@ from time import sleep
 import pandas as pd
 
 from core.squad_data import load_squad_table, open_fm_process
-from core.ui_automation import create_input_controller, reload_last_save, wait_for_continue_button
+from core.ui_automation import InputController, advance_one_day, reload_last_save
 
 START_DELAY_SECONDS = 3  # how long you have from running the script to make the FM24 window active
 ACTION_PAUSE_SECONDS = 1  # how long to wait between actions (mouse clicks, key presses, etc.)
 
-CA_TARGET = 100
-PA_TARGET = 170
+CA_TARGET = 120
+PA_TARGET = 190
 
 
-def should_stop_preview_loop(players_df):
+def should_stop_intake_loop(players_df):
     # stop if there is a player whose (CA >= CA_TARGET) and (PA >= PA_TARGET)
     return not players_df.loc[(players_df["CA"] >= CA_TARGET) & (players_df["PA"] >= PA_TARGET)].empty
 
@@ -22,11 +22,8 @@ def clear_terminal():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-"""Reload the preview day until the intake is good enough to keep."""
-
-
 def main():
-    controller = create_input_controller(action_pause=ACTION_PAUSE_SECONDS)
+    controller = InputController(action_pause=ACTION_PAUSE_SECONDS)
     process = open_fm_process()
     best_players_by_trial = []
     reload_last_save(controller)
@@ -35,10 +32,7 @@ def main():
     while True:
         try:
             trial += 1
-            sleep(1)
-            controller.press("space")
-            controller.press("escape")
-            wait_for_continue_button()
+            advance_one_day(controller)
 
             players_df = load_squad_table(process=process)
             best_player = players_df.sort_values(by=["PA", "CA"], ascending=[False, False]).iloc[0]
@@ -66,7 +60,7 @@ def main():
             print(f"Latest trial: {latest_trial['Trial']} | {latest_trial['Name']} | CA {latest_trial['CA']} | PA {latest_trial['PA']}")
             print()
 
-            if should_stop_preview_loop(players_df):
+            if should_stop_intake_loop(players_df):
                 return
 
             reload_last_save(controller)

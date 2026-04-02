@@ -1,17 +1,17 @@
 # FM_Intake_Reloader
 
-FM_Intake_Reloader is a small automation project for Football Manager youth intake reloading.
+FM_Intake_Reloader is a small cross-platform Football Manager toolkit.
 
-It does two main jobs:
+It currently supports two main workflows:
 
-- `preview_day.py` reloads the preview day until the quality of the intake preview meets the threshold you choose.
-- `intake_day.py` reloads the actual intake day and checks the generated players' `CA` and `PA` directly from game memory, stopping when the CA and PA meet the threshold you choose.
+- `preview_day.py` and `intake_day.py` automate youth intake reloading.
+- `player_scan.py` reads player data from game memory and builds an HTML report for the roles you care about.
 
 The project is designed so the main scripts you run are at the root of the repo. Everything inside `core/` is internal support code, while everything inside `tools/` is for calibration and/or debugging.
 
 ## What It Does
 
-On the preview day, the script `preview_day.py`:
+For youth intakes, `preview_day.py`:
 
 - reloads
 - advances once to the youth intake preview
@@ -19,16 +19,23 @@ On the preview day, the script `preview_day.py`:
 - reads the letter grades from the screen
 - repeats this until the preview meets your chosen thresholds
 
-On intake day, the script `intake_day.py`:
+For youth intakes, `intake_day.py`:
 
 - reloads
 - advances once to the youth intake
 - checks the `CA` and `PA` of players in the youth intake
 - repeats reloading until the intake meets your chosen thresholds
 
+For player scouting, `player_scan.py`:
+
+- reads a saved `shortlist.html` export from Football Manager
+- matches those players to live memory data
+- scores them for the roles you choose
+- writes the results to `table.html`
+
 ## Scripts
 
-Before you can do this though, you need to calibrate the script to work on your screen size / zoom / skin. To do this, run `uv run -m tools.calibration` and follow the instructions. This is best done on a youth intake preview day, so that you can accurately measure where the star rating region is. However, you can just skip through that if you are not near the youth intake preview day.
+Before using the preview/intake scripts, you need to calibrate the screen-reading positions for your layout, zoom, and skin. To do this, run `uv run -m tools.calibration` and follow the instructions. This is best done on a youth intake preview day, so that you can accurately measure where the star rating region is.
 
 The helper scripts in `tools/` are intended to be run as modules:
 
@@ -44,14 +51,28 @@ The repo is intended to work on both Windows and Linux.
 
 The scripts are meant to be run from the project root. You should not need to run anything inside `core/` or `tools/` directly.
 
-## Typical Workflow
+## Typical Workflows
 
-1. Run `uv run -m tools.calibration` once to set up your screen positions
-2. Open Football Manager and get to the relevant screen
-3. Open `preview_day.py` or `intake_day.py`
-4. Edit the stop condition for your chosen script
-5. Run the script - `uv run preview_day.py`
-6. Let the script keep reloading until it finds a result that meets your threshold
+### Preview / Intake Reloading
+
+1. Make a save just before the youth intake preview day or the youth intake day.
+2. Run `uv run -m tools.calibration` once to set up your screen positions.
+3. Open Football Manager and load that save.
+4. Open either `preview_day.py` or `intake_day.py`.
+5. Edit the stop condition for the script you want to use.
+6. Run the script, for example `uv run preview_day.py`.
+7. Let it keep reloading until it finds a result that meets your threshold.
+
+### Player Scan
+
+1. Open Football Manager whenever you want to scan players.
+2. Go to the player search screen and apply whatever filters you want.
+3. Make sure your player search view includes `UID`. Everything else is optional, though columns like `Age`, `Position`, `Club`, `Nationality`, and `Wage` make the output more useful.
+4. Press `Ctrl+A` to select all players.
+5. Press `Ctrl+P`, choose `Web Page`, and save the file as `shortlist.html` in the root of this repo.
+6. Open `player_scan.py` and change the `ROLES` list to the roles you want to score.
+7. Run `uv run player_scan.py`.
+8. Open `table.html` to view the results.
 
 ## Notes
 
