@@ -1,4 +1,4 @@
-"""HTML rendering helpers for FM player scan reports."""
+"""HTML rendering helpers for scouting report tables."""
 
 import html
 import json
@@ -66,10 +66,7 @@ def _build_table_html(dataframe, column_sort_values: dict[str, list] | None = No
         body_rows.append("<tr>" + "".join(cells) + "</tr>")
 
     return (
-        '<table border="0" class="report-table" id="player-table">'
-        f"<thead><tr>{header_html}</tr></thead>"
-        f"<tbody>{''.join(body_rows)}</tbody>"
-        "</table>"
+        f'<table border="0" class="report-table" id="player-table"><thead><tr>{header_html}</tr></thead><tbody>{"".join(body_rows)}</tbody></table>'
     )
 
 
@@ -82,6 +79,8 @@ def build_sortable_table_html(
     score_columns: list[str] | tuple[str, ...] = (),
     default_sort_column: str | None = None,
     column_sort_values: dict[str, list] | None = None,
+    score_style_min: float = 35,
+    score_style_max: float = 75,
 ):
     if dataframe.empty:
         raise ValueError("Cannot build a player scan report from an empty dataframe")
@@ -95,8 +94,7 @@ def build_sortable_table_html(
     table_html = _build_table_html(dataframe, column_sort_values=column_sort_values)
     numeric_filters = _build_numeric_filters(dataframe, column_sort_values=column_sort_values)
     role_toggles_html = "".join(
-        _role_toggle_html(role, dataframe.columns.get_loc(column))
-        for role, column in zip(roles, score_columns, strict=False)
+        _role_toggle_html(role, dataframe.columns.get_loc(column)) for role, column in zip(roles, score_columns, strict=False)
     )
     numeric_filter_html = "".join(
         (
@@ -555,6 +553,8 @@ def build_sortable_table_html(
     <script>
         const scoreColumnIndexes = {json.dumps(score_column_indexes)};
         const numericFilters = {json.dumps(numeric_filters)};
+        const scoreStyleMin = {json.dumps(score_style_min)};
+        const scoreStyleMax = {json.dumps(score_style_max)};
 
         function applyScoreStyling(table) {{
             scoreColumnIndexes.forEach((columnIndex) => {{
@@ -563,13 +563,14 @@ def build_sortable_table_html(
                     cell.style.backgroundColor = "rgba(14, 23, 34, 0.95)";
                     cell.style.backgroundImage = "";
 
-                    const rawScore = parseFloat(cell.textContent.trim());
+                    const rawScore = parseNumericCell(cell, cell.textContent.trim());
                     if (Number.isNaN(rawScore)) {{
                         return;
                     }}
 
-                    const clamped = Math.max(35, Math.min(75, rawScore));
-                    const intensity = (clamped - 35) / 40;
+                    const clamped = Math.max(scoreStyleMin, Math.min(scoreStyleMax, rawScore));
+                    const range = Math.max(1, scoreStyleMax - scoreStyleMin);
+                    const intensity = (clamped - scoreStyleMin) / range;
                     const hue = 8 + intensity * 120;
                     const alpha = 0.16 + intensity * 0.22;
                     const stop = 24 + intensity * 60;

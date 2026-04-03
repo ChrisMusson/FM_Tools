@@ -5,19 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from tkinter import messagebox, simpledialog
 
-from core.screen_probe import count_matching_pixels, sample_pixel
+from core.ui.screen import count_matching_pixels, sample_pixel
 
-CONFIG_PATH = Path(__file__).resolve().parents[1] / "core" / "screen_config.py"
+CONFIG_PATH = Path(__file__).resolve().parents[1] / "core" / "ui" / "screen_config.py"
 
 STAR_COLOUR = (244, 188, 0)
-RATING_COLOURS = {
-    "A": (73, 230, 35),
-    "B": (168, 222, 29),
-    "C": (255, 214, 79),
-    "D": (255, 135, 71),
-    "E": (255, 108, 73),
-    "F": (255, 84, 84),
-}
+RATING_COLOURS = {"A": (73, 230, 35), "B": (168, 222, 29), "C": (255, 214, 79), "D": (255, 135, 71), "E": (255, 108, 73), "F": (255, 84, 84)}
 RATING_PIXELS_PER_RATING = 175
 CONTINUE_TOLERANCE = 10
 
@@ -31,10 +24,7 @@ STEPS = [
     ("rating_top_left", "Click the top-left of the letter ratings region"),
     ("rating_bottom_right", "Click the bottom-right of the letter ratings region"),
     ("continue_pixel", "Click a pixel inside the Continue button that doesn't contain text"),
-    (
-        "continue_colour_sample",
-        "Move your cursor off the Continue/Fixtures button so the colour isn't the hover colour, then click anywhere",
-    ),
+    ("continue_colour_sample", "Move your cursor off the Continue/Fixtures button so the colour isn't the hover colour, then click anywhere"),
     ("confirm_reload", "Click the centre of the 'No' option in the reload confirmation dialog"),
 ]
 
@@ -187,32 +177,14 @@ class CalibrationApp:
         instruction_y = title_y + 48
         helper_y = instruction_y + 68
 
-        self.canvas.create_rectangle(
-            card_left + 8,
-            card_top + 10,
-            card_right + 8,
-            card_bottom + 10,
-            fill="#0a0f16",
-            outline="",
-        )
+        self.canvas.create_rectangle(card_left + 8, card_top + 10, card_right + 8, card_bottom + 10, fill="#0a0f16", outline="")
         self.canvas.create_rectangle(card_left, card_top, card_right, card_bottom, fill="#18232f", outline="#314355", width=1)
         self.canvas.create_rectangle(card_left + 24, card_top + 20, card_left + 96, card_top + 24, fill="#8fb7d8", outline="")
         self.canvas.create_text(
-            card_left + 28,
-            title_y,
-            anchor="nw",
-            fill="#f8fafc",
-            font=("TkDefaultFont", 18, "bold"),
-            text="FM Screen Calibration",
+            card_left + 28, title_y, anchor="nw", fill="#f8fafc", font=("TkDefaultFont", 18, "bold"), text="FM Screen Calibration"
         )
         self.instruction_text = self.canvas.create_text(
-            card_left + 28,
-            instruction_y,
-            anchor="nw",
-            fill="#e2e8f0",
-            width=card_width - 56,
-            font=("TkDefaultFont", 14),
-            text="",
+            card_left + 28, instruction_y, anchor="nw", fill="#e2e8f0", width=card_width - 56, font=("TkDefaultFont", 14), text=""
         )
         self.canvas.create_text(
             card_left + 28,
@@ -247,13 +219,7 @@ class CalibrationApp:
     def draw_marker(self, point: Point):
         radius = 7
         return self.canvas.create_oval(
-            point.x - radius,
-            point.y - radius,
-            point.x + radius,
-            point.y + radius,
-            fill="#ef4444",
-            outline="#ffffff",
-            width=2,
+            point.x - radius, point.y - radius, point.x + radius, point.y + radius, fill="#ef4444", outline="#ffffff", width=2
         )
 
     def prompt_for_continue_colour(self):
@@ -343,14 +309,9 @@ class CalibrationApp:
         elif key == "full_star_sample_bottom_right":
             region, self.full_star_pixels = self.sample_star_pixels("full_star_sample_top_left", "full_star_sample_bottom_right")
             self.full_star_rating = self.ask_star_rating(
-                "Whole-Star Sample Rating",
-                "Enter the displayed whole-number rating for this sample, such as 2 or 4.",
-                whole_number=True,
+                "Whole-Star Sample Rating", "Enter the displayed whole-number rating for this sample, such as 2 or 4.", whole_number=True
             )
-            print(
-                f"Sampled whole-star region {region}: rating={self.full_star_rating} yellow_pixels={self.full_star_pixels}",
-                flush=True,
-            )
+            print(f"Sampled whole-star region {region}: rating={self.full_star_rating} yellow_pixels={self.full_star_pixels}", flush=True)
         elif key == "half_star_sample_bottom_right":
             region, self.half_star_pixels = self.sample_star_pixels("half_star_sample_top_left", "half_star_sample_bottom_right")
             self.half_star_rating = self.ask_star_rating(
@@ -358,10 +319,7 @@ class CalibrationApp:
                 "Enter the displayed rating for this sample, including the half star, such as 2.5 or 4.5.",
                 whole_number=False,
             )
-            print(
-                f"Sampled half-star region {region}: rating={self.half_star_rating} yellow_pixels={self.half_star_pixels}",
-                flush=True,
-            )
+            print(f"Sampled half-star region {region}: rating={self.half_star_rating} yellow_pixels={self.half_star_pixels}", flush=True)
         elif key == "continue_colour_sample":
             self.continue_colour = self.sample_continue_colour()
             saved_point = self.clicks["continue_pixel"]
@@ -412,12 +370,7 @@ class CalibrationApp:
         if self.half_star_pixels is None or self.half_star_rating is None:
             raise RuntimeError("Half-star sample was not captured")
 
-        star_increments = calculate_star_increments(
-            self.full_star_pixels,
-            self.full_star_rating,
-            self.half_star_pixels,
-            self.half_star_rating,
-        )
+        star_increments = calculate_star_increments(self.full_star_pixels, self.full_star_rating, self.half_star_pixels, self.half_star_rating)
         output = render_config(self.clicks, self.continue_colour, star_increments)
         CONFIG_PATH.write_text(output, encoding="utf-8")
 

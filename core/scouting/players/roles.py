@@ -161,13 +161,7 @@ class _RoleNamespace:
 
 ROLE = _RoleNamespace()
 ROLE_BY_CODE: dict[str, Role] = {}
-DUTY_CODE_SUFFIX = {
-    Duty.DEFEND: "d",
-    Duty.SUPPORT: "s",
-    Duty.ATTACK: "a",
-    Duty.STOPPER: "s",
-    Duty.COVER: "c",
-}
+DUTY_CODE_SUFFIX = {Duty.DEFEND: "d", Duty.SUPPORT: "s", Duty.ATTACK: "a", Duty.STOPPER: "s", Duty.COVER: "c"}
 
 
 def _register_role_family(namespace_name: str, family_type: type[RoleFamily], short_name: str, full_name: str, *duties: Duty):
@@ -190,7 +184,9 @@ _register_role_family("FULL_BACK", DefendSupportAttackRoleFamily, "fb", "Full-Ba
 _register_role_family("INVERTED_FULL_BACK", DefendRoleFamily, "ifb", "Inverted Full-Back", Duty.DEFEND)
 _register_role_family("INVERTED_WING_BACK", DefendSupportAttackRoleFamily, "iwb", "Inverted Wing-Back", Duty.DEFEND, Duty.SUPPORT, Duty.ATTACK)
 _register_role_family("LIBERO", DefendSupportRoleFamily, "l", "Libero", Duty.DEFEND, Duty.SUPPORT)
-_register_role_family("NO_NONSENSE_CENTRE_BACK", DefendStopperCoverRoleFamily, "ncb", "No-Nonsense Centre-Back", Duty.DEFEND, Duty.STOPPER, Duty.COVER)
+_register_role_family(
+    "NO_NONSENSE_CENTRE_BACK", DefendStopperCoverRoleFamily, "ncb", "No-Nonsense Centre-Back", Duty.DEFEND, Duty.STOPPER, Duty.COVER
+)
 _register_role_family("NO_NONSENSE_FULL_BACK", DefendRoleFamily, "nfb", "No-Nonsense Full-Back", Duty.DEFEND)
 _register_role_family("WIDE_CENTRE_BACK", DefendSupportAttackRoleFamily, "wcb", "Wide Centre-Back", Duty.DEFEND, Duty.SUPPORT, Duty.ATTACK)
 _register_role_family("WING_BACK", DefendSupportAttackRoleFamily, "wb", "Wing-Back", Duty.DEFEND, Duty.SUPPORT, Duty.ATTACK)

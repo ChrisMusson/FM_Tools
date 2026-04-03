@@ -2,9 +2,9 @@
 
 import pandas as pd
 
-from core.attributes import Attribute
-from core.role_definitions import ROLE_DEFINITIONS, RoleDefinition
-from core.roles import Role, parse_role
+from core.scouting.players.attributes import Attribute
+from core.scouting.players.role_definitions import ROLE_DEFINITIONS, RoleDefinition
+from core.scouting.players.roles import Role, parse_role
 
 KEY_WEIGHT = 5
 GREEN_WEIGHT = 3
@@ -44,11 +44,7 @@ def filter_players_for_roles(players_df: pd.DataFrame, roles: list[Role | str], 
         shortlist_uids = []
         top_pct = target_n * 100 / len(players_df) / len(roles)
         for role in roles:
-            shortlist_uids += (
-                players_df.sort_values(role.code, ascending=False)
-                .head(int(players_df.shape[0] * top_pct / 100))["UID"]
-                .to_list()
-            )
+            shortlist_uids += players_df.sort_values(role.code, ascending=False).head(int(players_df.shape[0] * top_pct / 100))["UID"].to_list()
         return players_df[players_df["UID"].isin(shortlist_uids)]
 
     if filter_type == "potential":

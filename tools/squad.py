@@ -1,6 +1,6 @@
 """Example script for printing Name, CA, and PA from selected squad buckets."""
 
-from core.squad_data import load_squad_table
+from core.memory.squad import load_squad_table
 
 SQUAD_TYPES = {
     0: "First Team",
@@ -26,6 +26,7 @@ SQUAD_TYPES = {
     30: "Dutch Reserves",
     44: "Second Team",
 }
+
 
 def main():
     squad_ids = [0, 9, 22]

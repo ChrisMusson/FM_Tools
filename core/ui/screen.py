@@ -8,9 +8,10 @@ import time
 from pathlib import Path
 
 import numpy as np
-from core.platform_support import IS_WINDOWS
-from core.screen_config import RATINGS, STARS
 from PIL import Image
+
+from core.platform import IS_WINDOWS
+from core.ui.screen_config import RATINGS, STARS
 
 
 def _linux_capture_commands(path: str) -> list[list[str]]:
@@ -97,13 +98,7 @@ def count_matching_pixels(region, colour, tolerance: int = 40):
 
 def guess_star_rating(yellow_pixels, half_increment: int = STARS.half_increment, full_increment: int = STARS.full_increment):
     stars, expected = min(
-        (
-            (
-                index / 2,
-                int(half_increment) * ((index + 1) // 2) + int(full_increment) * (index // 2),
-            )
-            for index in range(11)
-        ),
+        ((index / 2, int(half_increment) * ((index + 1) // 2) + int(full_increment) * (index // 2)) for index in range(11)),
         key=lambda item: abs(yellow_pixels - item[1]),
     )
     return stars, expected, abs(yellow_pixels - expected)

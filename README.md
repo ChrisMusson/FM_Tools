@@ -1,85 +1,116 @@
 # FM_Intake_Reloader
 
-FM_Intake_Reloader is a small cross-platform Football Manager toolkit.
+Cross-platform Football Manager toolkit for:
 
-It currently supports two main workflows:
+- youth intake reloading
+- shortlist-based player scanning
+- shortlist-based coach scanning
+- coach assignment optimisation
 
-- `preview_day.py` and `intake_day.py` automate youth intake reloading.
-- `player_scan.py` reads player data from game memory and builds an HTML report for the roles you care about.
+The scripts you are meant to run live at the repo root. Everything in `core/` is shared support code, and `tools/` contains calibration/debug helpers.
 
-The project is designed so the main scripts you run are at the root of the repo. Everything inside `core/` is internal support code, while everything inside `tools/` is for calibration and/or debugging.
+## Setup
 
-## What It Does
+1. Install `uv`.
+2. Run `uv sync` from the repo root.
+3. Keep Football Manager open while using any script that reads memory.
 
-For youth intakes, `preview_day.py`:
+On Linux, install `spectacle` for screenshots:
 
-- reloads
-- advances once to the youth intake preview
-- reads the star rating from the screen
-- reads the letter grades from the screen
-- repeats this until the preview meets your chosen thresholds
+- Debian/Ubuntu: `sudo apt install kde-spectacle`
+- Fedora: `sudo dnf install spectacle`
+- Arch: `sudo pacman -S spectacle`
 
-For youth intakes, `intake_day.py`:
+## Main Scripts
 
-- reloads
-- advances once to the youth intake
-- checks the `CA` and `PA` of players in the youth intake
-- repeats reloading until the intake meets your chosen thresholds
+- `preview_day.py`
+  Reloads the intake preview day until the star/grade preview matches your thresholds.
+- `intake_day.py`
+  Reloads the actual intake day until a player hits your CA/PA targets.
+- `scan_players.py`
+  Builds `player_table.html` from a player shortlist export.
+- `scan_coaches.py`
+  Builds `staff_table.html` from a staff shortlist export.
+- `optimise_coaches.py`
+  Finds the best one-coach-per-area training setup from a staff shortlist export.
 
-For player scouting, `player_scan.py`:
+## Coach Scan
 
-- reads a saved `shortlist.html` export from Football Manager
-- matches those players to live memory data
-- scores them for the roles you choose
-- writes the results to `table.html`
+Use `scan_coaches.py` when you want a sortable staff report in the browser.
 
-## Scripts
+1. In Football Manager, open the staff search screen.
+2. Add `UID` to the view.
+3. Export the results as a web page and save it as `staff_shortlist.html` in the repo root.
+4. Run `uv run scan_coaches.py`.
+5. Open `staff_table.html`.
 
-Before using the preview/intake scripts, you need to calibrate the screen-reading positions for your layout, zoom, and skin. To do this, run `uv run -m tools.calibration` and follow the instructions. This is best done on a youth intake preview day, so that you can accurately measure where the star rating region is.
+Useful extra columns in the FM view are `Name`, `Club`, `Age`, `Wage`, and licence/qualification columns, but `UID` is the only required one.
 
-The helper scripts in `tools/` are intended to be run as modules:
+The generated report includes each shortlisted coach's scores across the training categories and can be sorted/filtered in the browser.
+
+## Coach Optimisation
+
+Use `optimise_coaches.py` when you want the best unique assignment of coaches to training areas.
+
+1. Export `staff_shortlist.html` as above.
+2. Open `optimise_coaches.py`.
+3. Edit the config block at the top if needed:
+   - `ALLOWED_CLUBS`
+   - `EXCLUDED_AREAS`
+   - `EXTRA_UIDS`
+   - `INCLUDED_UIDS`
+   - `EXCLUDED_UIDS`
+4. Run `uv run optimise_coaches.py`.
+5. Read the assignment table printed in the terminal.
+
+What it does:
+
+- reads the shortlisted staff from `staff_shortlist.html`
+- adds the current manager automatically
+- optionally adds extra staff by UID even if they are not in the shortlist export
+- assigns at most one training area to each coach
+- maximises total raw coaching role score across the active training areas
+
+Notes:
+
+- `ALLOWED_CLUBS = []` means do not filter by club.
+- `None` inside `ALLOWED_CLUBS` means unemployed / no club.
+- `EXCLUDED_AREAS = [TRAINING_AREAS.SET_PIECES]` is useful if you do not care about set pieces.
+
+## Player Scan
+
+Use `scan_players.py` when you want a sortable player report for specific roles. The attribute weighting for each role/duty can be found in `core/scouting/players/role_definitions.py`
+
+1. In Football Manager, open player search.
+2. Add `UID` to the view.
+3. Export the results as a web page and save it as `player_shortlist.html` in the repo root.
+4. Open `scan_players.py` and edit the `ROLES` list if needed.
+5. Run `uv run scan_players.py`.
+6. Open `player_table.html`.
+
+## Preview / Intake Reloading
+
+Before using `preview_day.py` or `intake_day.py`, calibrate your screen positions once:
+
+1. Run `uv run -m tools.calibration`.
+2. Follow the prompts.
+3. Do this on a layout/zoom/skin you actually use in game.
+
+Typical preview/intake workflow:
+
+1. Make a save just before the intake preview day or intake day.
+2. Open the relevant script and change the threshold values at the top.
+3. Bring Football Manager to the foreground.
+4. Run either `uv run preview_day.py` or `uv run intake_day.py`.
+
+## Tools
+
+The helper tools are intended to be run as modules:
 
 - `uv run -m tools.calibration`
 - `uv run -m tools.squad`
 
-## Platform Support
-
-The repo is intended to work on both Windows and Linux.
-
-- Screen reading and input automation use different backends depending on the OS.
-- Squad data reading uses OS-specific process-memory access behind one shared interface.
-
-The scripts are meant to be run from the project root. You should not need to run anything inside `core/` or `tools/` directly.
-
-## Typical Workflows
-
-### Preview / Intake Reloading
-
-1. Make a save just before the youth intake preview day or the youth intake day.
-2. Run `uv run -m tools.calibration` once to set up your screen positions.
-3. Open Football Manager and load that save.
-4. Open either `preview_day.py` or `intake_day.py`.
-5. Edit the stop condition for the script you want to use.
-6. Run the script, for example `uv run preview_day.py`.
-7. Let it keep reloading until it finds a result that meets your threshold.
-
-### Player Scan
-
-1. Open Football Manager whenever you want to scan players.
-2. Go to the player search screen and apply whatever filters you want.
-3. Make sure your player search view includes `UID`. Everything else is optional, though columns like `Age`, `Position`, `Club`, `Nationality`, and `Wage` make the output more useful.
-4. Press `Ctrl+A` to select all players.
-5. Press `Ctrl+P`, choose `Web Page`, and save the file as `shortlist.html` in the root of this repo.
-6. Open `player_scan.py` and change the `ROLES` list to the roles you want to score.
-7. Run `uv run player_scan.py`.
-8. Open `table.html` to view the results.
-
 ## Notes
 
-- The scripts assume Football Manager is visible, focused, and in the same layout you calibrated for.
-- On Linux, install `spectacle`. This repo uses it for screenshots and it is the backend we know works reliably.
-  - Debian-based: `sudo apt install kde-spectacle`.
-  - Fedora: `sudo dnf install spectacle`.
-  - Arch: `sudo pacman -S spectacle`.
-  - On other distros, look for a package called `spectacle` or `kde-spectacle`.
-- On Windows, the game and script should be running with compatible permissions so input and memory reading both work properly.
+- The automation scripts assume Football Manager is visible, focused, and using the same layout you calibrated for.
+- You should not need to run anything inside `core/` directly.

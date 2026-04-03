@@ -2,9 +2,9 @@
 
 from time import monotonic, sleep
 
-from core.platform_support import IS_WINDOWS
-from core.screen_config import CONTINUE_BUTTON, RELOAD_DIALOG_NO_BUTTON
-from core.screen_probe import sample_pixel
+from core.platform import IS_WINDOWS
+from core.ui.screen import sample_pixel
+from core.ui.screen_config import CONTINUE_BUTTON, RELOAD_DIALOG_NO_BUTTON
 
 WAIT_TIMEOUT_SECONDS = 180
 POLL_INTERVAL_SECONDS = 1
@@ -20,12 +20,7 @@ def _windows_button_name(button: int):
 
 
 def _linux_key_name(key_name: str):
-    return {
-        "ctrl": "Control_L",
-        "shift": "Shift_L",
-        "escape": "Escape",
-        "f4": "F4",
-    }.get(key_name, key_name)
+    return {"ctrl": "Control_L", "shift": "Shift_L", "escape": "Escape", "f4": "F4"}.get(key_name, key_name)
 
 
 class InputController:
@@ -93,10 +88,7 @@ def _pixel_matches(pixel, target_colour, tolerance: int = 0):
     return all(abs(int(pixel[index]) - int(target_colour[index])) <= tolerance for index in range(3))
 
 
-def wait_for_continue_button(
-    timeout: float = WAIT_TIMEOUT_SECONDS,
-    poll_interval: float = POLL_INTERVAL_SECONDS,
-):
+def wait_for_continue_button(timeout: float = WAIT_TIMEOUT_SECONDS, poll_interval: float = POLL_INTERVAL_SECONDS):
     deadline = monotonic() + timeout
     last_seen = None
 

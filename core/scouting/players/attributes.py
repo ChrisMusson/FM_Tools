@@ -1,4 +1,4 @@
-"""Typed FM attribute definitions shared by scouting and memory readers."""
+"""Typed FM player attribute definitions shared by scouting and memory readers."""
 
 from enum import StrEnum
 
@@ -84,16 +84,9 @@ class ATTRIBUTE:
     FOOT = FootAttribute
 
 
-Attribute = (
-    GoalkeepingAttribute
-    | TechnicalAttribute
-    | MentalAttribute
-    | PhysicalAttribute
-    | HiddenAttribute
-    | FootAttribute
-)
+Attribute = GoalkeepingAttribute | TechnicalAttribute | MentalAttribute | PhysicalAttribute | HiddenAttribute | FootAttribute
 
-
+# This is the order that player attributes are stored in memory
 SCAN_ATTRIBUTES = (
     TechnicalAttribute.CROSSING,
     TechnicalAttribute.DRIBBLING,

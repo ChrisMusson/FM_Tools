@@ -1,20 +1,22 @@
+"""Reload intake day until the youth intake meets your CA/PA targets."""
+
 import os
 from time import sleep
 
 import pandas as pd
 
-from core.squad_data import load_squad_table, open_fm_process
-from core.ui_automation import InputController, advance_one_day, reload_last_save
+from core.memory.process import open_fm_process
+from core.memory.squad import load_squad_table
+from core.ui.input import InputController, advance_one_day, reload_last_save
 
 START_DELAY_SECONDS = 3  # how long you have from running the script to make the FM24 window active
 ACTION_PAUSE_SECONDS = 1  # how long to wait between actions (mouse clicks, key presses, etc.)
 
-CA_TARGET = 120
-PA_TARGET = 190
+CA_TARGET = 90
+PA_TARGET = 170
 
 
 def should_stop_intake_loop(players_df):
-    # stop if there is a player whose (CA >= CA_TARGET) and (PA >= PA_TARGET)
     return not players_df.loc[(players_df["CA"] >= CA_TARGET) & (players_df["PA"] >= PA_TARGET)].empty
 
 
@@ -36,14 +38,7 @@ def main():
 
             players_df = load_squad_table(process=process)
             best_player = players_df.sort_values(by=["PA", "CA"], ascending=[False, False]).iloc[0]
-            best_players_by_trial.append(
-                {
-                    "Trial": trial,
-                    "Name": best_player["Name"],
-                    "CA": best_player["CA"],
-                    "PA": best_player["PA"],
-                }
-            )
+            best_players_by_trial.append({"Trial": trial, "Name": best_player["Name"], "CA": best_player["CA"], "PA": best_player["PA"]})
 
             leaderboard = (
                 pd.DataFrame(best_players_by_trial)

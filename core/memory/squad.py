@@ -3,8 +3,10 @@
 import struct
 
 import pandas as pd
-from core.fm_process import follow_pointer_chain, get_fm_image_range, open_fm_process, read_uint
-from core.player_memory import PERSON_OBJECT_OFFSET, PLAYER_OBJECT_VTABLE, read_person_name
+
+from core.memory.person import read_person_name
+from core.memory.players import PERSON_OBJECT_OFFSET, PLAYER_OBJECT_VTABLE
+from core.memory.process import follow_pointer_chain, get_fm_image_range, open_fm_process, read_uint
 
 PTR_ROOT_PREFIX = b"\x48\x8b\x35"
 PTR_ROOT_SUFFIX = b"\x48\x8b\x56\x18\x4c\x8b\x76\x20\x49\x29\xd6\xb0\x01\x49\x83\xfe\x10"

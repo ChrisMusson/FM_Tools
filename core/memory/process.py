@@ -1,10 +1,10 @@
-"""Cross-platform FM process memory helpers."""
+"""Cross-platform process memory helpers for Football Manager."""
 
 import ctypes
 import ctypes.util
 from pathlib import Path
 
-from core.platform_support import IS_WINDOWS
+from core.platform import IS_WINDOWS
 
 FM_EXE_PATH_FRAGMENT = "/Football Manager 2024/fm.exe"
 
@@ -18,14 +18,7 @@ class LinuxFmProcess:
         self.pid = pid
         libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
         self._readv = libc.process_vm_readv
-        self._readv.argtypes = [
-            ctypes.c_int,
-            ctypes.POINTER(IOVec),
-            ctypes.c_ulong,
-            ctypes.POINTER(IOVec),
-            ctypes.c_ulong,
-            ctypes.c_ulong,
-        ]
+        self._readv.argtypes = [ctypes.c_int, ctypes.POINTER(IOVec), ctypes.c_ulong, ctypes.POINTER(IOVec), ctypes.c_ulong, ctypes.c_ulong]
         self._readv.restype = ctypes.c_ssize_t
         self.fm_text_start, self.fm_text_end = self._find_text_range()
 
@@ -36,12 +29,7 @@ class LinuxFmProcess:
     def _find_text_range(self) -> tuple[int, int]:
         regions = list(self.iter_memory_regions())
         marker_index = next(
-            (
-                index
-                for index, (_, _, _, path) in enumerate(regions)
-                if FM_EXE_PATH_FRAGMENT in path or path.endswith("/fm.exe")
-            ),
-            None,
+            (index for index, (_, _, _, path) in enumerate(regions) if FM_EXE_PATH_FRAGMENT in path or path.endswith("/fm.exe")), None
         )
         if marker_index is None:
             raise RuntimeError("Could not find any fm.exe memory mappings")
@@ -97,6 +85,22 @@ def open_fm_process():
     return LinuxFmProcess.open()
 
 
+def get_fm_base_address(process) -> int:
+    if IS_WINDOWS:
+        import pymem.process
+
+        module = pymem.process.module_from_name(process.process_handle, "fm.exe")
+        if module is None:
+            raise RuntimeError("Could not find fm.exe in the target process module list")
+        return int(module.lpBaseOfDll)
+
+    for start, _end, _perms, path in process.iter_memory_regions():
+        if FM_EXE_PATH_FRAGMENT in path or path.endswith("/fm.exe"):
+            return start
+
+    raise RuntimeError("Could not find a base mapping for fm.exe")
+
+
 def get_fm_image_range(process) -> tuple[int, int]:
     if IS_WINDOWS:
         import pymem.process
@@ -124,6 +128,29 @@ def read_c_string(process, address: int, size: int) -> str:
         return raw.decode("latin-1")
 
 
+def read_pointer(process, address: int) -> int | None:
+    pointer = read_uint(process, address)
+    return pointer or None
+
+
+def read_chained_value(process, base_address: int, pointer_offsets: list[int], final_offset: int, *, size: int):
+    current = base_address
+    for offset in pointer_offsets:
+        current = read_pointer(process, current + offset)
+        if current is None:
+            return None
+    return read_uint(process, current + final_offset, size)
+
+
+def read_chained_string(process, base_address: int, pointer_offsets: list[int], final_offset: int, *, size: int):
+    current = base_address
+    for offset in pointer_offsets:
+        current = read_pointer(process, current + offset)
+        if current is None:
+            return None
+    return read_c_string(process, current + final_offset, size)
+
+
 def follow_pointer_chain(process, base_address: int, *offsets: int) -> int | None:
     current = base_address
     for offset in offsets:
@@ -134,13 +161,7 @@ def follow_pointer_chain(process, base_address: int, *offsets: int) -> int | Non
 
 
 def iter_pattern_matches(
-    process,
-    pattern: bytes,
-    *,
-    writable: bool | None = None,
-    executable: bool | None = None,
-    private: bool | None = None,
-    chunk_size: int = 0x200000,
+    process, pattern: bytes, *, writable: bool | None = None, executable: bool | None = None, private: bool | None = None, chunk_size: int = 0x200000
 ):
     if IS_WINDOWS:
         for address in process.pattern_scan_all(pattern, return_multiple=True):

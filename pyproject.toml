@@ -1,10 +1,11 @@
 [project]
 name = "FM_Intake_Reloader"
 version = "0.1.0"
-description = "A small automation project for Football Manager 24 youth intake reloading."
+description = "A cross-platform Football Manager toolkit for intake reloading and shortlist-based scouting."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "highspy>=1.13.1",
     "lxml>=6.0.2",
     "numpy>=2.4.4",
     "pandas>=3.0.1",
@@ -12,4 +13,18 @@ dependencies = [
     "pyautogui>=0.9.54; sys_platform == 'win32'",
     "pymem>=1.14.0; sys_platform == 'win32'",
     "python-xlib>=0.33; sys_platform == 'linux'",
+    "ruff>=0.15.9",
 ]
+
+[tool.ruff]
+line-length = 150
+fix = true
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
