@@ -6,7 +6,7 @@ import pandas as pd
 
 from core.memory.person import PERSON_UID_OFFSET, read_person_age, read_person_name
 from core.memory.process import get_fm_base_address, iter_pattern_matches, read_chained_string, read_chained_value, read_uint
-from core.memory.squad import find_manager_address
+from core.memory.squad import find_manager_address, get_current_club_address
 from core.scouting.staff.roles import (
     COACHING_AREA_COLUMNS,
     STAFF_AREA_WEIGHTS,
@@ -19,6 +19,8 @@ from core.scouting.staff.roles import (
 STAFF_OBJECT_SCAN_PATTERN = b"\xe8\xc2\xa4\x45\x01"
 STAFF_PERSON_OBJECT_OFFSET = 0xF8
 HUMAN_MANAGER_PERSON_OBJECT_OFFSET = 0x450
+CURRENT_CLUB_STAFF_LIST_START_OFFSET = 0x78
+CURRENT_CLUB_STAFF_LIST_END_OFFSET = 0x80
 STAFF_CA_OFFSET = 0xD6
 STAFF_PA_OFFSET = 0xD8
 EMPTY_STAFF_SNAPSHOT = {
@@ -143,6 +145,33 @@ def build_staff_shortlist_table(shortlist_df: pd.DataFrame, process) -> pd.DataF
 def build_staff_table_for_uids(uids, process) -> pd.DataFrame:
     rows = _build_staff_rows(uids, process)
     return pd.DataFrame(rows).astype({"UID": "Int64"}) if rows else pd.DataFrame(columns=["UID"]).astype({"UID": "Int64"})
+
+
+def build_staff_table_for_staff_addresses(staff_addresses, process) -> pd.DataFrame:
+    fm_base_address = get_staff_fm_base_address(process)
+    rows = []
+
+    for staff_address in pd.Series(list(staff_addresses), dtype="Int64").drop_duplicates():
+        if pd.isna(staff_address):
+            continue
+
+        person_address = int(staff_address) + STAFF_PERSON_OBJECT_OFFSET
+        rows.append({"UID": read_uint(process, person_address + PERSON_UID_OFFSET, 4), **read_staff_snapshot(process, person_address, fm_base_address)})
+
+    return pd.DataFrame(rows).astype({"UID": "Int64"}) if rows else pd.DataFrame(columns=["UID"]).astype({"UID": "Int64"})
+
+
+def build_current_club_staff_table(process) -> pd.DataFrame:
+    club_address = get_current_club_address(process)
+    list_start = read_uint(process, club_address + CURRENT_CLUB_STAFF_LIST_START_OFFSET)
+    list_end = read_uint(process, club_address + CURRENT_CLUB_STAFF_LIST_END_OFFSET)
+
+    if not list_start or list_end < list_start:
+        return pd.DataFrame(columns=["UID"]).astype({"UID": "Int64"})
+
+    staff_addresses = [read_uint(process, slot) for slot in range(list_start, list_end, 8)]
+    staff_df = build_staff_table_for_staff_addresses(staff_addresses, process)
+    return staff_df.loc[staff_df["Memory Name"].notna()].reset_index(drop=True)
 
 
 def read_current_manager_staff_row(process) -> dict[str, object]:

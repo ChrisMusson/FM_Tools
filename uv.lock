@@ -11,7 +11,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "fm-intake-reloader"
+name = "fm-tools"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

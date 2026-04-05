@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from core.memory.staff import build_staff_shortlist_table
+from core.memory.staff import build_current_club_staff_table, build_staff_shortlist_table
 from core.scouting.shortlists import approved_shortlist_columns, coalesce_columns, load_shortlist_table
 
 DEFAULT_STAFF_SHORTLIST_PATH = "staff_shortlist.html"
@@ -33,3 +33,22 @@ def build_staff_shortlist_dataframe(shortlist_df: pd.DataFrame, process) -> pd.D
 def load_staff_shortlist_dataframe(shortlist_path: str, process, uid_error: str = DEFAULT_STAFF_UID_ERROR) -> pd.DataFrame:
     shortlist_df = load_shortlist_table(shortlist_path, uid_error=uid_error)
     return build_staff_shortlist_dataframe(shortlist_df, process)
+
+
+def append_current_club_staff(staff_df: pd.DataFrame, process) -> tuple[pd.DataFrame, list[int]]:
+    current_club_staff_df = build_current_club_staff_table(process)
+    if current_club_staff_df.empty:
+        return staff_df.reset_index(drop=True), []
+
+    current_club_staff_df = current_club_staff_df.copy()
+    current_club_staff_df["Name"] = current_club_staff_df["Memory Name"]
+    all_columns = list(dict.fromkeys([*staff_df.columns, *current_club_staff_df.columns]))
+    existing_by_uid = staff_df.reindex(columns=all_columns).drop_duplicates(subset=["UID"], keep="first").set_index("UID")
+    current_club_by_uid = current_club_staff_df.reindex(columns=all_columns).drop_duplicates(subset=["UID"], keep="first").set_index("UID")
+    existing_uids = set(existing_by_uid.index.dropna().astype(int))
+    added_uids = sorted(set(current_club_by_uid.index.dropna().astype(int)) - existing_uids)
+    combined_by_uid = current_club_by_uid.combine_first(existing_by_uid)
+    uid_order = list(existing_by_uid.index) + [uid for uid in current_club_by_uid.index if uid not in existing_by_uid.index]
+    combined_df = combined_by_uid.loc[uid_order].reset_index()
+
+    return combined_df, added_uids

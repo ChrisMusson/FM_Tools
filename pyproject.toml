@@ -1,5 +1,5 @@
 [project]
-name = "FM_Intake_Reloader"
+name = "FM_Tools"
 version = "0.1.0"
 description = "A cross-platform Football Manager toolkit for intake reloading and shortlist-based scouting."
 readme = "README.md"

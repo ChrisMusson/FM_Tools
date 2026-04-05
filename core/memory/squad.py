@@ -58,15 +58,20 @@ def find_manager_address(process=None) -> int:
     raise RuntimeError("Could not resolve a valid manager address from the ptr_root signature inside fm.exe")
 
 
-def load_squad_table(target_teams=(22,), process=None):
+def get_current_club_address(process=None) -> int:
     process = process or open_fm_process()
-    target_teams = {target_teams} if isinstance(target_teams, int) else set(target_teams)
-
     manager_address = find_manager_address(process)
     club_address = follow_pointer_chain(process, manager_address, 0xC8, 0x10, 0x30)
     if not club_address:
         raise RuntimeError("Resolved the manager address, but the club chain returned null")
+    return club_address
 
+
+def load_squad_table(target_teams=(22,), process=None):
+    process = process or open_fm_process()
+    target_teams = {target_teams} if isinstance(target_teams, int) else set(target_teams)
+
+    club_address = get_current_club_address(process)
     team_list_start = read_uint(process, club_address + 0x18)
     team_list_end = read_uint(process, club_address + 0x20)
     rows = []

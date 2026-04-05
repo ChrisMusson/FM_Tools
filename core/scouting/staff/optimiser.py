@@ -7,7 +7,7 @@ from highspy import Highs, HighsModelStatus
 
 from core.memory.staff import build_staff_table_for_uids, read_current_manager_staff_row
 from core.scouting.staff.roles import COACHING_AREA_COLUMNS
-from core.scouting.staff.shortlist import load_staff_shortlist_dataframe
+from core.scouting.staff.shortlist import append_current_club_staff, load_staff_shortlist_dataframe
 from core.uids import normalise_uid
 
 RAW_SCORE_COLUMNS = {area: f"{area} Raw" for area in COACHING_AREA_COLUMNS}
@@ -116,10 +116,11 @@ def append_current_manager_candidate(staff_df, process):
 
 
 def append_extra_uid_candidates(staff_df, process, extra_uids=None):
-    requested_uids = sorted(normalise_uid_values(extra_uids))
-    if not requested_uids:
+    requested_uid_values = normalise_uid_values(extra_uids)
+    if not requested_uid_values:
         return staff_df, []
 
+    requested_uids = sorted(requested_uid_values)
     extra_df = build_staff_table_for_uids(requested_uids, process)
     if extra_df.empty:
         return staff_df, requested_uids
@@ -127,14 +128,19 @@ def append_extra_uid_candidates(staff_df, process, extra_uids=None):
     extra_df = extra_df.loc[extra_df["Memory Name"].notna()].copy()
     extra_df["Name"] = extra_df["Memory Name"]
     found_uids = set(extra_df["UID"].dropna().astype(int))
-    missing_uids = sorted(requested_uids - found_uids)
+    missing_uids = sorted(requested_uid_values - found_uids)
 
     return pd.concat([staff_df, extra_df], ignore_index=True), missing_uids
 
 
-def load_coach_candidates(shortlist_path, process, *, allowed_clubs=None, included_uids=None, excluded_uids=None, extra_uids=None):
+def load_coach_candidates(
+    shortlist_path, process, *, allowed_clubs=None, included_uids=None, excluded_uids=None, extra_uids=None, include_current_club_staff=False
+):
     staff_df = load_staff_shortlist_dataframe(shortlist_path, process)
     shortlist_count = len(staff_df)
+    current_club_staff_uids = []
+    if include_current_club_staff:
+        staff_df, current_club_staff_uids = append_current_club_staff(staff_df, process)
     staff_df, missing_extra_uids = append_extra_uid_candidates(staff_df, process, extra_uids=extra_uids)
     staff_df, manager_status, manager_error = append_current_manager_candidate(staff_df, process)
     filtered_df = dedupe_staff_candidates(
@@ -146,6 +152,7 @@ def load_coach_candidates(shortlist_path, process, *, allowed_clubs=None, includ
         "manager_status": manager_status,
         "manager_error": manager_error,
         "missing_extra_uids": missing_extra_uids,
+        "current_club_staff_uids": current_club_staff_uids,
     }
 
 

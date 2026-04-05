@@ -1,4 +1,4 @@
-# FM_Intake_Reloader
+# FM_Tools
 
 Cross-platform Football Manager toolkit for:
 
@@ -41,8 +41,11 @@ Use `scan_coaches.py` when you want a sortable staff report in the browser.
 1. In Football Manager, open the staff search screen.
 2. Add `UID` to the view.
 3. Export the results as a web page and save it as `staff_shortlist.html` in the repo root.
-4. Run `uv run scan_coaches.py`.
-5. Open `staff_table.html`.
+4. Open `scan_coaches.py` and edit the config block if needed:
+   - `INCLUDE_CURRENT_CLUB_STAFF` to add the current manager's club staff from memory
+   - `MIN_ANY_CATEGORY_STARS` to keep only coaches with at least one coaching category at or above a given star rating
+5. Run `uv run scan_coaches.py`.
+6. Open `staff_table.html`.
 
 Useful extra columns in the FM view are `Name`, `Club`, `Age`, `Wage`, and licence/qualification columns, but `UID` is the only required one.
 
@@ -57,6 +60,8 @@ Use `optimise_coaches.py` when you want the best unique assignment of coaches to
 3. Edit the config block at the top if needed:
    - `ALLOWED_CLUBS`
    - `EXCLUDED_AREAS`
+   - `INCLUDE_CURRENT_CLUB_STAFF`
+   - `MIN_ANY_CATEGORY_STARS`
    - `EXTRA_UIDS`
    - `INCLUDED_UIDS`
    - `EXCLUDED_UIDS`
@@ -67,6 +72,7 @@ What it does:
 
 - reads the shortlisted staff from `staff_shortlist.html`
 - adds the current manager automatically
+- optionally adds the current manager's club staff from memory
 - optionally adds extra staff by UID even if they are not in the shortlist export
 - assigns at most one training area to each coach
 - maximises total raw coaching role score across the active training areas
