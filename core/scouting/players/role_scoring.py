@@ -11,13 +11,13 @@ GREEN_WEIGHT = 3
 BLUE_WEIGHT = 1
 
 
-def _weighted_attribute_total(players_df: pd.DataFrame, attributes: tuple[Attribute, ...], weight: int) -> pd.Series:
+def _weighted_attribute_total(players_df, attributes, weight):
     if not attributes:
         return pd.Series(0, index=players_df.index, dtype=float)
     return players_df[[attribute.value for attribute in attributes]].sum(axis=1) * weight
 
 
-def score_players_for_roles(players_df: pd.DataFrame, roles: list[Role | str], role_definitions: dict[Role, RoleDefinition] | None = None):
+def score_players_for_roles(players_df, roles, role_definitions=None):
     role_definitions = role_definitions or ROLE_DEFINITIONS
     roles = [parse_role(role) for role in roles]
     players_df = players_df.copy()
@@ -35,7 +35,7 @@ def score_players_for_roles(players_df: pd.DataFrame, roles: list[Role | str], r
     return players_df.dropna(subset=[role.code for role in roles])
 
 
-def filter_players_for_roles(players_df: pd.DataFrame, roles: list[Role | str], target_n: int = 5000, filter_type: str = "roles"):
+def filter_players_for_roles(players_df, roles, target_n=5000, filter_type="roles"):
     roles = [parse_role(role) for role in roles]
     if len(players_df) <= target_n:
         return players_df

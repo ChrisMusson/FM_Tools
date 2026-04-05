@@ -1,6 +1,6 @@
-"""Typed FM player roles."""
+"""FM player roles."""
 
-from dataclasses import dataclass
+from collections import namedtuple
 from enum import StrEnum
 
 
@@ -12,41 +12,33 @@ class Duty(StrEnum):
     COVER = "Cover"
 
 
-@dataclass(frozen=True)
-class Role:
-    code: str
-    short_name: str
-    name: str
-    duty: Duty
+class Role(namedtuple("RoleBase", "code short_name name duty")):
+    __slots__ = ()
 
     @property
-    def label(self) -> str:
+    def label(self):
         return f"{self.name} ({self.duty.value})"
 
     @property
-    def short_label(self) -> str:
+    def short_label(self):
         return f"{self.short_name.upper()} ({self.duty.value[0]})"
 
 
 class RoleFamily:
-    short_name: str
-    name: str
-    roles_by_duty: dict[Duty, Role]
-
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         self.short_name = short_name
         self.name = name
         self.roles_by_duty = roles_by_duty
 
     @property
-    def all(self) -> tuple[Role, ...]:
+    def all(self):
         return tuple(self.roles_by_duty.values())
 
 
 class DefendRoleFamily(RoleFamily):
     DEFEND: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.DEFEND = roles_by_duty[Duty.DEFEND]
 
@@ -54,7 +46,7 @@ class DefendRoleFamily(RoleFamily):
 class SupportRoleFamily(RoleFamily):
     SUPPORT: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.SUPPORT = roles_by_duty[Duty.SUPPORT]
 
@@ -62,7 +54,7 @@ class SupportRoleFamily(RoleFamily):
 class AttackRoleFamily(RoleFamily):
     ATTACK: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.ATTACK = roles_by_duty[Duty.ATTACK]
 
@@ -71,7 +63,7 @@ class DefendSupportRoleFamily(RoleFamily):
     DEFEND: Role
     SUPPORT: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.DEFEND = roles_by_duty[Duty.DEFEND]
         self.SUPPORT = roles_by_duty[Duty.SUPPORT]
@@ -81,7 +73,7 @@ class SupportAttackRoleFamily(RoleFamily):
     SUPPORT: Role
     ATTACK: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.SUPPORT = roles_by_duty[Duty.SUPPORT]
         self.ATTACK = roles_by_duty[Duty.ATTACK]
@@ -92,7 +84,7 @@ class DefendSupportAttackRoleFamily(RoleFamily):
     SUPPORT: Role
     ATTACK: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.DEFEND = roles_by_duty[Duty.DEFEND]
         self.SUPPORT = roles_by_duty[Duty.SUPPORT]
@@ -104,7 +96,7 @@ class DefendStopperCoverRoleFamily(RoleFamily):
     STOPPER: Role
     COVER: Role
 
-    def __init__(self, short_name: str, name: str, roles_by_duty: dict[Duty, Role]):
+    def __init__(self, short_name, name, roles_by_duty):
         super().__init__(short_name, name, roles_by_duty)
         self.DEFEND = roles_by_duty[Duty.DEFEND]
         self.STOPPER = roles_by_duty[Duty.STOPPER]
@@ -160,11 +152,11 @@ class _RoleNamespace:
 
 
 ROLE = _RoleNamespace()
-ROLE_BY_CODE: dict[str, Role] = {}
+ROLE_BY_CODE = {}
 DUTY_CODE_SUFFIX = {Duty.DEFEND: "d", Duty.SUPPORT: "s", Duty.ATTACK: "a", Duty.STOPPER: "s", Duty.COVER: "c"}
 
 
-def _register_role_family(namespace_name: str, family_type: type[RoleFamily], short_name: str, full_name: str, *duties: Duty):
+def _register_role_family(namespace_name, family_type, short_name, full_name, *duties):
     roles_by_duty = {}
     for duty in duties:
         code = f"{short_name}{DUTY_CODE_SUFFIX[duty]}"
@@ -224,7 +216,7 @@ _register_role_family("TARGET_FORWARD", SupportAttackRoleFamily, "tf", "Target F
 _register_role_family("TREQUARTISTA", AttackRoleFamily, "tre", "Trequartista", Duty.ATTACK)
 
 
-def parse_role(role: str | Role) -> Role:
+def parse_role(role):
     if isinstance(role, Role):
         return role
     try:

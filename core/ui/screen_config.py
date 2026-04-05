@@ -1,32 +1,25 @@
 """Auto-generated screen calibration values."""
 
-from dataclasses import dataclass
-
-Point = tuple[int, int]
-Region = tuple[int, int, int, int]
-Colour = tuple[int, int, int]
-
-
-@dataclass(frozen=True)
 class StarsCalibration:
-    region: Region
-    colour: Colour
-    half_increment: int
-    full_increment: int
+    def __init__(self, region, colour, half_increment, full_increment):
+        self.region = region
+        self.colour = colour
+        self.half_increment = half_increment
+        self.full_increment = full_increment
 
 
-@dataclass(frozen=True)
 class RatingsCalibration:
-    region: Region
-    pixels_per_rating: int
-    colours: dict[str, Colour]
+    def __init__(self, region, pixels_per_rating, colours):
+        self.region = region
+        self.pixels_per_rating = pixels_per_rating
+        self.colours = colours
 
 
-@dataclass(frozen=True)
 class ContinueButtonCalibration:
-    xy: Point
-    colour: Colour
-    tolerance: int
+    def __init__(self, xy, colour, tolerance):
+        self.xy = xy
+        self.colour = colour
+        self.tolerance = tolerance
 
 
 STARS = StarsCalibration(region=(1686, 359, 85, 24), colour=(244, 188, 0), half_increment=11, full_increment=25)
@@ -38,5 +31,4 @@ RATINGS = RatingsCalibration(
 )
 
 CONTINUE_BUTTON = ContinueButtonCalibration(xy=(1772, 31), colour=(112, 61, 191), tolerance=10)
-
-RELOAD_DIALOG_NO_BUTTON: Point = (1041, 580)
+RELOAD_DIALOG_NO_BUTTON = (1041, 580)

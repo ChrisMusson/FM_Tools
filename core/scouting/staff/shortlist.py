@@ -17,7 +17,7 @@ APPROVED_STAFF_SHORTLIST_COLUMNS = {
 DEFAULT_STAFF_UID_ERROR = "coach shortlist HTML must include a UID column"
 
 
-def build_staff_shortlist_dataframe(shortlist_df: pd.DataFrame, process) -> pd.DataFrame:
+def build_staff_shortlist_dataframe(shortlist_df, process):
     staff_df = shortlist_df.merge(build_staff_shortlist_table(shortlist_df, process), on="UID")
     shortlist_columns = approved_shortlist_columns(shortlist_df, APPROVED_STAFF_SHORTLIST_COLUMNS)
     staff_df = coalesce_columns(staff_df, "Name", *(column for column in [shortlist_columns["Name"], "Memory Name"] if column))
@@ -30,12 +30,12 @@ def build_staff_shortlist_dataframe(shortlist_df: pd.DataFrame, process) -> pd.D
     return staff_df
 
 
-def load_staff_shortlist_dataframe(shortlist_path: str, process, uid_error: str = DEFAULT_STAFF_UID_ERROR) -> pd.DataFrame:
+def load_staff_shortlist_dataframe(shortlist_path, process, uid_error=DEFAULT_STAFF_UID_ERROR):
     shortlist_df = load_shortlist_table(shortlist_path, uid_error=uid_error)
     return build_staff_shortlist_dataframe(shortlist_df, process)
 
 
-def append_current_club_staff(staff_df: pd.DataFrame, process) -> tuple[pd.DataFrame, list[int]]:
+def append_current_club_staff(staff_df, process):
     current_club_staff_df = build_current_club_staff_table(process)
     if current_club_staff_df.empty:
         return staff_df.reset_index(drop=True), []

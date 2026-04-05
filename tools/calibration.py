@@ -1,7 +1,6 @@
 import math
 import time
 import tkinter as tk
-from dataclasses import dataclass
 from pathlib import Path
 from tkinter import messagebox, simpledialog
 
@@ -29,24 +28,24 @@ STEPS = [
 ]
 
 
-@dataclass(frozen=True)
 class Point:
-    x: int
-    y: int
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 
-@dataclass(frozen=True)
 class Region:
-    left: int
-    top: int
-    width: int
-    height: int
+    def __init__(self, left, top, width, height):
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
 
     def as_tuple(self):
         return (self.left, self.top, self.width, self.height)
 
 
-def build_region(first: Point, second: Point):
+def build_region(first, second):
     left = min(first.x, second.x)
     top = min(first.y, second.y)
     right = max(first.x, second.x)
@@ -75,7 +74,7 @@ def calculate_star_increments(full_pixels, full_rating, half_pixels, half_rating
     return (half_increment, full_increment)
 
 
-def render_config(clicks: dict[str, Point], continue_colour, star_increments):
+def render_config(clicks, continue_colour, star_increments):
     star_region = build_region(clicks["star_top_left"], clicks["star_bottom_right"]).as_tuple()
     rating_region = build_region(clicks["rating_top_left"], clicks["rating_bottom_right"]).as_tuple()
 
@@ -87,33 +86,26 @@ def render_config(clicks: dict[str, Point], continue_colour, star_increments):
     lines = [
         '"""Auto-generated screen calibration values."""',
         "",
-        "from dataclasses import dataclass",
-        "",
-        "Point = tuple[int, int]",
-        "Region = tuple[int, int, int, int]",
-        "Colour = tuple[int, int, int]",
-        "",
-        "",
-        "@dataclass(frozen=True)",
         "class StarsCalibration:",
-        "    region: Region",
-        "    colour: Colour",
-        "    half_increment: int",
-        "    full_increment: int",
+        "    def __init__(self, region, colour, half_increment, full_increment):",
+        "        self.region = region",
+        "        self.colour = colour",
+        "        self.half_increment = half_increment",
+        "        self.full_increment = full_increment",
         "",
         "",
-        "@dataclass(frozen=True)",
         "class RatingsCalibration:",
-        "    region: Region",
-        "    pixels_per_rating: int",
-        "    colours: dict[str, Colour]",
+        "    def __init__(self, region, pixels_per_rating, colours):",
+        "        self.region = region",
+        "        self.pixels_per_rating = pixels_per_rating",
+        "        self.colours = colours",
         "",
         "",
-        "@dataclass(frozen=True)",
         "class ContinueButtonCalibration:",
-        "    xy: Point",
-        "    colour: Colour",
-        "    tolerance: int",
+        "    def __init__(self, xy, colour, tolerance):",
+        "        self.xy = xy",
+        "        self.colour = colour",
+        "        self.tolerance = tolerance",
         "",
         "",
         "STARS = StarsCalibration(",
@@ -135,23 +127,23 @@ def render_config(clicks: dict[str, Point], continue_colour, star_increments):
         f"    tolerance={CONTINUE_TOLERANCE},",
         ")",
         "",
-        f"RELOAD_DIALOG_NO_BUTTON: Point = ({clicks['confirm_reload'].x}, {clicks['confirm_reload'].y})",
+        f"RELOAD_DIALOG_NO_BUTTON = ({clicks['confirm_reload'].x}, {clicks['confirm_reload'].y})",
         "",
     ]
     return "\n".join(lines)
 
 
 class CalibrationApp:
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root):
         self.root = root
-        self.clicks: dict[str, Point] = {}
-        self.history: list[str] = []
-        self.marker_ids: list[int | None] = []
-        self.continue_colour: tuple[int, int, int] | None = None
-        self.full_star_pixels: int | None = None
-        self.full_star_rating: float | None = None
-        self.half_star_pixels: int | None = None
-        self.half_star_rating: float | None = None
+        self.clicks = {}
+        self.history = []
+        self.marker_ids = []
+        self.continue_colour = None
+        self.full_star_pixels = None
+        self.full_star_rating = None
+        self.half_star_pixels = None
+        self.half_star_rating = None
         self.continue_colour_prompt_shown = False
         self.reload_dialog_prompt_shown = False
 
@@ -216,7 +208,7 @@ class CalibrationApp:
         text = "Calibration complete. Writing core/screen_config.py..." if step is None else step[1]
         self.canvas.itemconfigure(self.instruction_text, text=text)
 
-    def draw_marker(self, point: Point):
+    def draw_marker(self, point):
         radius = 7
         return self.canvas.create_oval(
             point.x - radius, point.y - radius, point.x + radius, point.y + radius, fill="#ef4444", outline="#ffffff", width=2
@@ -271,7 +263,7 @@ class CalibrationApp:
         yellow_pixels = self.run_without_overlay(lambda: count_matching_pixels(region, STAR_COLOUR))
         return region, yellow_pixels
 
-    def ask_star_rating(self, title: str, prompt: str, *, whole_number: bool):
+    def ask_star_rating(self, title, prompt, *, whole_number):
         while True:
             rating = simpledialog.askfloat(title, prompt, parent=self.root, minvalue=0.5, maxvalue=5.0)
             if rating is None:
@@ -290,7 +282,7 @@ class CalibrationApp:
 
             return doubled / 2
 
-    def on_left_click(self, event: tk.Event):
+    def on_left_click(self, event):
         step = self.current_step()
         if step is None:
             return
@@ -330,7 +322,7 @@ class CalibrationApp:
         if len(self.history) == len(STEPS):
             self.finish()
 
-    def on_right_click(self, _event: tk.Event):
+    def on_right_click(self, _event):
         if not self.history:
             return
 
@@ -359,7 +351,7 @@ class CalibrationApp:
         print(f"Removed {key}: ({removed.x}, {removed.y})", flush=True)
         self.update_instruction()
 
-    def on_escape(self, _event: tk.Event):
+    def on_escape(self, _event):
         self.root.destroy()
 
     def finish(self):

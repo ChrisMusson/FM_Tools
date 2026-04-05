@@ -4,9 +4,10 @@ from math import floor
 
 import pandas as pd
 
+from core.memory.cache import get_cached_or_compute
 from core.memory.person import PERSON_UID_OFFSET, read_person_age, read_person_name
 from core.memory.process import get_fm_base_address, iter_pattern_matches, read_chained_string, read_chained_value, read_uint
-from core.memory.squad import find_manager_address, get_current_club_address
+from core.memory.session import find_manager_address, get_current_club_address
 from core.scouting.staff.roles import (
     COACHING_AREA_COLUMNS,
     STAFF_AREA_WEIGHTS,
@@ -54,36 +55,40 @@ def _get_staff_process_cache(process):
     return cache
 
 
-def get_staff_fm_base_address(process) -> int:
+def get_staff_fm_base_address(process):
     cache = _get_staff_process_cache(process)
     if "fm_base_address" not in cache:
         cache["fm_base_address"] = get_fm_base_address(process)
     return cache["fm_base_address"]
 
 
-def scan_staff_person_addresses(process, *, refresh: bool = False) -> dict[int, int]:
+def scan_staff_person_addresses(process, *, refresh=False):
     cache = _get_staff_process_cache(process)
     if not refresh and "person_addresses" in cache:
         return cache["person_addresses"]
 
-    people: dict[int, int] = {}
+    def build_person_addresses():
+        people = {}
 
-    for object_address in iter_pattern_matches(process, STAFF_OBJECT_SCAN_PATTERN, writable=True, executable=False, private=True):
-        person_address = object_address + 0xF8
-        try:
-            uid = read_uint(process, person_address + PERSON_UID_OFFSET, 4)
-        except Exception:
-            continue
-        if uid > 0 and uid not in people:
-            people[uid] = person_address
+        for object_address in iter_pattern_matches(process, STAFF_OBJECT_SCAN_PATTERN, writable=True, executable=False, private=True):
+            person_address = object_address + 0xF8
+            try:
+                uid = read_uint(process, person_address + PERSON_UID_OFFSET, 4)
+            except Exception:
+                continue
+            if uid > 0 and uid not in people:
+                people[uid] = person_address
 
-    cache["person_addresses"] = people
-    return people
+        return people
+
+    person_addresses, _cache_hit = get_cached_or_compute(process, "staff_person_addresses", key_parts={}, builder=build_person_addresses, refresh=refresh)
+    cache["person_addresses"] = person_addresses
+    return person_addresses
 
 
 def read_staff_snapshot(
-    process, person_address: int | None, fm_base_address: int, *, person_object_offset: int = STAFF_PERSON_OBJECT_OFFSET
-) -> dict[str, object]:
+    process, person_address, fm_base_address, *, person_object_offset=STAFF_PERSON_OBJECT_OFFSET
+):
     if person_address is None:
         return EMPTY_STAFF_SNAPSHOT.copy()
 
@@ -125,43 +130,54 @@ def read_staff_snapshot(
 
 
 def _build_staff_rows(uids, process):
-    fm_base_address = get_staff_fm_base_address(process)
-    person_addresses = scan_staff_person_addresses(process)
-    rows = []
+    ordered_uids = [None if pd.isna(uid) else int(uid) for uid in pd.Series(list(uids), dtype="Int64").drop_duplicates()]
 
-    for uid in pd.Series(list(uids), dtype="Int64").drop_duplicates():
-        uid_int = None if pd.isna(uid) else int(uid)
-        snapshot = read_staff_snapshot(process, person_addresses.get(uid_int), fm_base_address)
-        rows.append({"UID": uid_int, **snapshot})
+    def build_rows():
+        fm_base_address = get_staff_fm_base_address(process)
+        person_addresses = scan_staff_person_addresses(process)
+        rows = []
 
+        for uid_int in ordered_uids:
+            snapshot = read_staff_snapshot(process, person_addresses.get(uid_int), fm_base_address)
+            rows.append({"UID": uid_int, **snapshot})
+
+        return rows
+
+    rows, _cache_hit = get_cached_or_compute(process, "staff_rows_by_uid", key_parts={"uids": ordered_uids}, builder=build_rows)
     return rows
 
 
-def build_staff_shortlist_table(shortlist_df: pd.DataFrame, process) -> pd.DataFrame:
+def build_staff_shortlist_table(shortlist_df, process):
     rows = _build_staff_rows(shortlist_df["UID"], process)
     return pd.DataFrame(rows).astype({"UID": "Int64"})
 
 
-def build_staff_table_for_uids(uids, process) -> pd.DataFrame:
+def build_staff_table_for_uids(uids, process):
     rows = _build_staff_rows(uids, process)
     return pd.DataFrame(rows).astype({"UID": "Int64"}) if rows else pd.DataFrame(columns=["UID"]).astype({"UID": "Int64"})
 
 
-def build_staff_table_for_staff_addresses(staff_addresses, process) -> pd.DataFrame:
-    fm_base_address = get_staff_fm_base_address(process)
-    rows = []
+def build_staff_table_for_staff_addresses(staff_addresses, process):
+    ordered_staff_addresses = [int(staff_address) for staff_address in pd.Series(list(staff_addresses), dtype="Int64").drop_duplicates() if not pd.isna(staff_address)]
 
-    for staff_address in pd.Series(list(staff_addresses), dtype="Int64").drop_duplicates():
-        if pd.isna(staff_address):
-            continue
+    def build_rows():
+        fm_base_address = get_staff_fm_base_address(process)
+        rows = []
 
-        person_address = int(staff_address) + STAFF_PERSON_OBJECT_OFFSET
-        rows.append({"UID": read_uint(process, person_address + PERSON_UID_OFFSET, 4), **read_staff_snapshot(process, person_address, fm_base_address)})
+        for staff_address in ordered_staff_addresses:
+            person_address = staff_address + STAFF_PERSON_OBJECT_OFFSET
+            rows.append({"UID": read_uint(process, person_address + PERSON_UID_OFFSET, 4), **read_staff_snapshot(process, person_address, fm_base_address)})
+
+        return rows
+
+    rows, _cache_hit = get_cached_or_compute(
+        process, "staff_rows_by_staff_address", key_parts={"staff_addresses": ordered_staff_addresses}, builder=build_rows
+    )
 
     return pd.DataFrame(rows).astype({"UID": "Int64"}) if rows else pd.DataFrame(columns=["UID"]).astype({"UID": "Int64"})
 
 
-def build_current_club_staff_table(process) -> pd.DataFrame:
+def build_current_club_staff_table(process):
     club_address = get_current_club_address(process)
     list_start = read_uint(process, club_address + CURRENT_CLUB_STAFF_LIST_START_OFFSET)
     list_end = read_uint(process, club_address + CURRENT_CLUB_STAFF_LIST_END_OFFSET)
@@ -174,7 +190,7 @@ def build_current_club_staff_table(process) -> pd.DataFrame:
     return staff_df.loc[staff_df["Memory Name"].notna()].reset_index(drop=True)
 
 
-def read_current_manager_staff_row(process) -> dict[str, object]:
+def read_current_manager_staff_row(process):
     manager_address = find_manager_address(process)
     fm_base_address = get_staff_fm_base_address(process)
     uid = read_uint(process, manager_address + PERSON_UID_OFFSET, 4)

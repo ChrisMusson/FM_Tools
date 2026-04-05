@@ -14,7 +14,7 @@ class IOVec(ctypes.Structure):
 
 
 class LinuxFmProcess:
-    def __init__(self, pid: int):
+    def __init__(self, pid):
         self.pid = pid
         libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
         self._readv = libc.process_vm_readv
@@ -23,10 +23,10 @@ class LinuxFmProcess:
         self.fm_text_start, self.fm_text_end = self._find_text_range()
 
     @classmethod
-    def open(cls) -> "LinuxFmProcess":
+    def open(cls):
         return cls(_find_linux_fm_pid())
 
-    def _find_text_range(self) -> tuple[int, int]:
+    def _find_text_range(self):
         regions = list(self.iter_memory_regions())
         marker_index = next(
             (index for index, (_, _, _, path) in enumerate(regions) if FM_EXE_PATH_FRAGMENT in path or path.endswith("/fm.exe")), None
@@ -53,7 +53,7 @@ class LinuxFmProcess:
                 path = parts[5].strip() if len(parts) > 5 else ""
                 yield int(start_s, 16), int(end_s, 16), perms, path
 
-    def read_bytes(self, address: int, size: int) -> bytes:
+    def read_bytes(self, address, size):
         buffer = ctypes.create_string_buffer(size)
         local = IOVec(ctypes.cast(buffer, ctypes.c_void_p), size)
         remote = IOVec(ctypes.c_void_p(address), size)
@@ -64,7 +64,7 @@ class LinuxFmProcess:
         return bytes(buffer.raw)
 
 
-def _find_linux_fm_pid() -> int:
+def _find_linux_fm_pid():
     for proc_dir in Path("/proc").iterdir():
         if not proc_dir.name.isdigit():
             continue
@@ -85,7 +85,7 @@ def open_fm_process():
     return LinuxFmProcess.open()
 
 
-def get_fm_base_address(process) -> int:
+def get_fm_base_address(process):
     if IS_WINDOWS:
         import pymem.process
 
@@ -101,7 +101,7 @@ def get_fm_base_address(process) -> int:
     raise RuntimeError("Could not find a base mapping for fm.exe")
 
 
-def get_fm_image_range(process) -> tuple[int, int]:
+def get_fm_image_range(process):
     if IS_WINDOWS:
         import pymem.process
 
@@ -116,11 +116,11 @@ def get_fm_image_range(process) -> tuple[int, int]:
     return process.fm_text_start, process.fm_text_end
 
 
-def read_uint(process, address: int, size: int = 8) -> int:
+def read_uint(process, address, size=8):
     return int.from_bytes(process.read_bytes(address, size), byteorder="little")
 
 
-def read_c_string(process, address: int, size: int) -> str:
+def read_c_string(process, address, size):
     raw = process.read_bytes(address, size).split(b"\x00", 1)[0]
     try:
         return raw.decode("utf-8")
@@ -128,12 +128,12 @@ def read_c_string(process, address: int, size: int) -> str:
         return raw.decode("latin-1")
 
 
-def read_pointer(process, address: int) -> int | None:
+def read_pointer(process, address):
     pointer = read_uint(process, address)
     return pointer or None
 
 
-def read_chained_value(process, base_address: int, pointer_offsets: list[int], final_offset: int, *, size: int):
+def read_chained_value(process, base_address, pointer_offsets, final_offset, *, size):
     current = base_address
     for offset in pointer_offsets:
         current = read_pointer(process, current + offset)
@@ -142,7 +142,7 @@ def read_chained_value(process, base_address: int, pointer_offsets: list[int], f
     return read_uint(process, current + final_offset, size)
 
 
-def read_chained_string(process, base_address: int, pointer_offsets: list[int], final_offset: int, *, size: int):
+def read_chained_string(process, base_address, pointer_offsets, final_offset, *, size):
     current = base_address
     for offset in pointer_offsets:
         current = read_pointer(process, current + offset)
@@ -151,7 +151,7 @@ def read_chained_string(process, base_address: int, pointer_offsets: list[int], 
     return read_c_string(process, current + final_offset, size)
 
 
-def follow_pointer_chain(process, base_address: int, *offsets: int) -> int | None:
+def follow_pointer_chain(process, base_address, *offsets):
     current = base_address
     for offset in offsets:
         current = read_uint(process, current + offset)
@@ -161,7 +161,7 @@ def follow_pointer_chain(process, base_address: int, *offsets: int) -> int | Non
 
 
 def iter_pattern_matches(
-    process, pattern: bytes, *, writable: bool | None = None, executable: bool | None = None, private: bool | None = None, chunk_size: int = 0x200000
+    process, pattern, *, writable=None, executable=None, private=None, chunk_size=0x200000
 ):
     if IS_WINDOWS:
         for address in process.pattern_scan_all(pattern, return_multiple=True):

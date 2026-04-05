@@ -9,7 +9,7 @@ PERSON_BIRTH_DAY_OFFSET = 0x44
 PERSON_BIRTH_YEAR_OFFSET = 0x46
 
 
-def read_person_name(process, person_address: int | None) -> str | None:
+def read_person_name(process, person_address):
     if person_address is None:
         return None
 
@@ -32,7 +32,7 @@ def read_person_name(process, person_address: int | None) -> str | None:
     return None
 
 
-def read_person_age(process, person_address: int, fm_base_address: int) -> int:
+def read_person_age(process, person_address, fm_base_address):
     birth_day = read_uint(process, person_address + PERSON_BIRTH_DAY_OFFSET, 2)
     birth_year = read_uint(process, person_address + PERSON_BIRTH_YEAR_OFFSET, 2)
     current_day = read_uint(process, fm_base_address + CURRENT_DAY_RVA, 2) & 0x1FF

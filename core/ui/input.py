@@ -11,20 +11,20 @@ POLL_INTERVAL_SECONDS = 1
 RELOAD_SHORTCUT = ("ctrl", "shift", "r")  # Football Manager default: Load Last Save
 
 
-def _windows_key_name(key_name: str):
+def _windows_key_name(key_name):
     return {"escape": "esc"}.get(key_name, key_name)
 
 
-def _windows_button_name(button: int):
+def _windows_button_name(button):
     return {1: "left", 2: "middle", 3: "right"}.get(button, "left")
 
 
-def _linux_key_name(key_name: str):
+def _linux_key_name(key_name):
     return {"ctrl": "Control_L", "shift": "Shift_L", "escape": "Escape", "f4": "F4"}.get(key_name, key_name)
 
 
 class InputController:
-    def __init__(self, action_pause: float = 1):
+    def __init__(self, action_pause=1):
         self.action_pause = action_pause
         if IS_WINDOWS:
             import pyautogui
@@ -42,7 +42,7 @@ class InputController:
             self.display = display.Display()
             self.root = self.display.screen().root
 
-    def press(self, key_name: str):
+    def press(self, key_name):
         if self.platform == "windows":
             self.pyautogui.press(_windows_key_name(key_name))
         else:
@@ -52,7 +52,7 @@ class InputController:
             self.display.sync()
         sleep(self.action_pause)
 
-    def hotkey(self, *key_names: str):
+    def hotkey(self, *key_names):
         if self.platform == "windows":
             self.pyautogui.hotkey(*(_windows_key_name(key_name) for key_name in key_names))
         else:
@@ -64,7 +64,7 @@ class InputController:
             self.display.sync()
         sleep(self.action_pause)
 
-    def click(self, x: int, y: int, button: int = 1):
+    def click(self, x, y, button=1):
         if self.platform == "windows":
             self.pyautogui.click(x=x, y=y, button=_windows_button_name(button))
         else:
@@ -76,7 +76,7 @@ class InputController:
             self.display.sync()
         sleep(self.action_pause)
 
-    def _linux_keycode(self, key_name: str):
+    def _linux_keycode(self, key_name):
         keysym = self.XK.string_to_keysym(_linux_key_name(key_name))
         keycode = self.display.keysym_to_keycode(keysym)
         if keycode == 0:
@@ -84,11 +84,11 @@ class InputController:
         return keycode
 
 
-def _pixel_matches(pixel, target_colour, tolerance: int = 0):
+def _pixel_matches(pixel, target_colour, tolerance=0):
     return all(abs(int(pixel[index]) - int(target_colour[index])) <= tolerance for index in range(3))
 
 
-def wait_for_continue_button(timeout: float = WAIT_TIMEOUT_SECONDS, poll_interval: float = POLL_INTERVAL_SECONDS):
+def wait_for_continue_button(timeout=WAIT_TIMEOUT_SECONDS, poll_interval=POLL_INTERVAL_SECONDS):
     deadline = monotonic() + timeout
     last_seen = None
 
@@ -105,14 +105,14 @@ def wait_for_continue_button(timeout: float = WAIT_TIMEOUT_SECONDS, poll_interva
     )
 
 
-def advance_one_day(controller: InputController, settle_seconds: float = 1):
+def advance_one_day(controller, settle_seconds=1):
     sleep(settle_seconds)
     controller.press("space")
     controller.press("escape")
     wait_for_continue_button()
 
 
-def reload_last_save(controller: InputController):
+def reload_last_save(controller):
     controller.hotkey(*RELOAD_SHORTCUT)
     controller.click(*RELOAD_DIALOG_NO_BUTTON)
     wait_for_continue_button()

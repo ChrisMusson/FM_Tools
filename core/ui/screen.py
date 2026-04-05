@@ -14,7 +14,7 @@ from core.platform import IS_WINDOWS
 from core.ui.screen_config import RATINGS, STARS
 
 
-def _linux_capture_commands(path: str) -> list[list[str]]:
+def _linux_capture_commands(path):
     commands = []
 
     if shutil.which("spectacle"):
@@ -33,7 +33,7 @@ def _linux_capture_commands(path: str) -> list[list[str]]:
     return commands
 
 
-def _wait_for_capture_file(path: Path, timeout: float = 3.0, interval: float = 0.05):
+def _wait_for_capture_file(path, timeout=3.0, interval=0.05):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if path.exists() and path.stat().st_size > 0:
@@ -82,7 +82,7 @@ def sample_pixel(point):
     return capture_region((x, y, 1, 1)).getpixel((0, 0))
 
 
-def _count_matching_pixels_in_array(pixels, colour, tolerance: int = 40):
+def _count_matching_pixels_in_array(pixels, colour, tolerance=40):
     red = pixels[..., 0].astype(np.int16)
     green = pixels[..., 1].astype(np.int16)
     blue = pixels[..., 2].astype(np.int16)
@@ -91,12 +91,12 @@ def _count_matching_pixels_in_array(pixels, colour, tolerance: int = 40):
     return int(mask.sum())
 
 
-def count_matching_pixels(region, colour, tolerance: int = 40):
+def count_matching_pixels(region, colour, tolerance=40):
     pixels = np.asarray(capture_region(region), dtype=np.uint8)
     return _count_matching_pixels_in_array(pixels, colour, tolerance=tolerance)
 
 
-def guess_star_rating(yellow_pixels, half_increment: int = STARS.half_increment, full_increment: int = STARS.full_increment):
+def guess_star_rating(yellow_pixels, half_increment=STARS.half_increment, full_increment=STARS.full_increment):
     stars, expected = min(
         ((index / 2, int(half_increment) * ((index + 1) // 2) + int(full_increment) * (index // 2)) for index in range(11)),
         key=lambda item: abs(yellow_pixels - item[1]),
@@ -110,7 +110,7 @@ def read_star_rating():
     return stars, yellow_pixels
 
 
-def read_letter_ratings(pixels_per_rating: int = RATINGS.pixels_per_rating):
+def read_letter_ratings(pixels_per_rating=RATINGS.pixels_per_rating):
     pixels = np.asarray(capture_region(RATINGS.region), dtype=np.uint8)
     counts = {grade: _count_matching_pixels_in_array(pixels, colour, tolerance=0) for grade, colour in RATINGS.colours.items()}
     return "".join(grade * max(0, int(round(counts[grade] / pixels_per_rating))) for grade in sorted(counts))

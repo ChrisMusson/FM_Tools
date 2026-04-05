@@ -1,4 +1,4 @@
-"""Typed staff/coaching domain definitions shared across staff tools."""
+"""Staff/coaching domain definitions shared across staff tools."""
 
 from enum import IntEnum, StrEnum
 
@@ -35,7 +35,7 @@ class StaffArea(StrEnum):
     SET_PIECES = "SETP"
 
     @property
-    def short_label(self) -> str:
+    def short_label(self):
         return self.value
 
 
@@ -52,7 +52,7 @@ class Qualification(IntEnum):
     NATIONAL_C = 7
 
     @property
-    def label(self) -> str:
+    def label(self):
         return self.name.replace("_", " ").title()
 
 
@@ -95,7 +95,7 @@ COACHING_AREAS = tuple(STAFF_AREA_WEIGHTS)
 COACHING_AREA_COLUMNS = [area.value for area in COACHING_AREAS]
 
 
-def decode_qualification(raw_value: int) -> tuple[Qualification | None, bool]:
+def decode_qualification(raw_value):
     studying = raw_value >= 100
     value = 0x101 - raw_value if studying else raw_value
     try:

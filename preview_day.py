@@ -15,7 +15,7 @@ STOP_AT_OR_BELOW_GRADE = "AAF"
 STOP_AT_OR_ABOVE_STARS = 4
 
 
-def should_stop_preview_loop(grade_string: str, stars: float):
+def should_stop_preview_loop(grade_string, stars):
     return grade_string <= STOP_AT_OR_BELOW_GRADE or stars >= STOP_AT_OR_ABOVE_STARS
 
 

@@ -6,13 +6,13 @@ import json
 import pandas as pd
 
 
-def _display_cell(value) -> str:
+def _display_cell(value):
     if pd.isna(value):
         return ""
     return html.escape(str(value))
 
 
-def _role_toggle_html(role, column_index: int) -> str:
+def _role_toggle_html(role, column_index):
     return (
         f'<button class="role-toggle is-active" type="button" data-column-index="{column_index}" aria-pressed="true">'
         f'<span class="role-toggle-code">{html.escape(role.short_label)}</span>'
@@ -20,7 +20,7 @@ def _role_toggle_html(role, column_index: int) -> str:
     )
 
 
-def _build_numeric_filters(dataframe, column_sort_values: dict[str, list] | None = None) -> list[dict]:
+def _build_numeric_filters(dataframe, column_sort_values=None):
     filters = []
     column_sort_values = column_sort_values or {}
 
@@ -51,7 +51,7 @@ def _build_numeric_filters(dataframe, column_sort_values: dict[str, list] | None
     return filters
 
 
-def _build_table_html(dataframe, column_sort_values: dict[str, list] | None = None) -> str:
+def _build_table_html(dataframe, column_sort_values=None):
     column_sort_values = column_sort_values or {}
     header_html = "".join(f"<th>{html.escape(str(column))}</th>" for column in dataframe.columns)
     body_rows = []
@@ -73,14 +73,14 @@ def _build_table_html(dataframe, column_sort_values: dict[str, list] | None = No
 def build_sortable_table_html(
     dataframe,
     *,
-    title: str = "FM Player Scan",
-    subtitle: str = "",
-    roles: list | tuple = (),
-    score_columns: list[str] | tuple[str, ...] = (),
-    default_sort_column: str | None = None,
-    column_sort_values: dict[str, list] | None = None,
-    score_style_min: float = 35,
-    score_style_max: float = 75,
+    title="FM Player Scan",
+    subtitle="",
+    roles=(),
+    score_columns=(),
+    default_sort_column=None,
+    column_sort_values=None,
+    score_style_min=35,
+    score_style_max=75,
 ):
     if dataframe.empty:
         raise ValueError("Cannot build a player scan report from an empty dataframe")

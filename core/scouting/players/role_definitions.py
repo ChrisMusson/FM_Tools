@@ -1,19 +1,16 @@
-"""Typed role scoring definitions."""
+"""Role scoring definitions."""
 
-from dataclasses import dataclass
+from collections import namedtuple
 
 from core.scouting.players.attributes import ATTRIBUTE, Attribute
 from core.scouting.players.roles import ROLE, Role
 
 
-@dataclass(frozen=True)
-class RoleDefinition:
-    key: tuple[Attribute, ...]
-    green: tuple[Attribute, ...]
-    blue: tuple[Attribute, ...]
+class RoleDefinition(namedtuple("RoleDefinitionBase", "key green blue")):
+    __slots__ = ()
 
 
-ROLE_DEFINITIONS: dict[Role, RoleDefinition] = {
+ROLE_DEFINITIONS = {
     ROLE.GOALKEEPER.DEFEND: RoleDefinition(
         key=(ATTRIBUTE.PHYSICAL.AGILITY, ATTRIBUTE.GOALKEEPING.REFLEXES),
         green=(

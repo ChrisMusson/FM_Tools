@@ -5,7 +5,7 @@ import pandas as pd
 from core.uids import normalise_uid
 
 
-def load_shortlist_table(path: str, *, uid_error: str, leading_columns_to_drop: int = 0) -> pd.DataFrame:
+def load_shortlist_table(path, *, uid_error, leading_columns_to_drop=0):
     shortlist_df = pd.read_html(path, encoding="utf-8")[0].dropna(how="all")
     if leading_columns_to_drop:
         shortlist_df = shortlist_df[shortlist_df.columns[leading_columns_to_drop:]]
@@ -16,7 +16,7 @@ def load_shortlist_table(path: str, *, uid_error: str, leading_columns_to_drop: 
     return shortlist_df
 
 
-def coalesce_columns(dataframe: pd.DataFrame, target: str, *candidates: str) -> pd.DataFrame:
+def coalesce_columns(dataframe, target, *candidates):
     present = [candidate for candidate in candidates if candidate in dataframe.columns]
     if not present:
         return dataframe
@@ -28,5 +28,5 @@ def coalesce_columns(dataframe: pd.DataFrame, target: str, *candidates: str) -> 
     return dataframe
 
 
-def approved_shortlist_columns(dataframe: pd.DataFrame, approved: dict[str, tuple[str, ...]]) -> dict[str, str | None]:
+def approved_shortlist_columns(dataframe, approved):
     return {target: next((candidate for candidate in candidates if candidate in dataframe.columns), None) for target, candidates in approved.items()}
